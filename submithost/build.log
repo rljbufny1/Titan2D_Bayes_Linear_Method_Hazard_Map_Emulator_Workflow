@@ -1,0 +1,229 @@
+#1 [internal] load build definition from Dockerfile
+#1 sha256:c1118fa17082b761b53a346e15b89ba6695fb1a52eecd3fff7ac35dacf4cf90a
+#1 transferring dockerfile: 121B 0.0s done
+#1 DONE 0.1s
+
+#2 [internal] load .dockerignore
+#2 sha256:30dad2d3156330142ab533624b5f72795048df76701eceb9b1370604e992ea77
+#2 transferring context: 2B done
+#2 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/rockylinux:8
+#3 sha256:c5022588b18f164af5d380d35e32c2ad571098a94441b65b3f111ca9ffef18ce
+#3 ...
+
+#4 [auth] library/rockylinux:pull token for registry-1.docker.io
+#4 sha256:f09819f910309be7df165463d93e012714223f43b21d3e4c18f0b3a521febb87
+#4 DONE 0.0s
+
+#3 [internal] load metadata for docker.io/library/rockylinux:8
+#3 sha256:c5022588b18f164af5d380d35e32c2ad571098a94441b65b3f111ca9ffef18ce
+#3 DONE 1.2s
+
+#5 [ 1/49] FROM docker.io/library/rockylinux:8@sha256:c464612ef7e3d54d658c3eaa4778b5cdc990ec7a4d9ab63b0f00c9994c6ce980
+#5 sha256:0198af8be6ab501ede2e1b0bbe4318944674c1e4340156a0b1a464ed376e9499
+#5 DONE 0.0s
+
+#11 [internal] load build context
+#11 sha256:fbfff150686852d3e883812654ea75e82d1345656053e198f88e8522421f46a5
+#11 transferring context: 15.57kB 0.1s done
+#11 DONE 0.1s
+
+#19 [14/49] RUN python3 -m pip install cartopy
+#19 sha256:f002607cb21722fe56cc1182a36805b4aa100f6126c2f5a444ea0a6babef22c6
+#19 CACHED
+
+#7 [ 3/49] RUN useradd --gid 808 --uid 550 --create-home --password '$6$ouJkMasm5X8E4Aye$QTFH2cHk4b8/TmzAcCxbTz7Y84xyNFs.gqm/HWEykdngmOgELums1qOi3e6r8Z.j7GEA9bObS/2pTN1WArGNf0' submithost
+#7 sha256:6cf96b746c269faa701aa8ef5afc193533c9f9d5f48275a635df5d02ac3e72a9
+#7 CACHED
+
+#6 [ 2/49] RUN groupadd --gid 808 submithost-group
+#6 sha256:938c89cccade030403f48336f373d8a343fc2bc30812e5e1e69c3a9d662e405f
+#6 CACHED
+
+#31 [26/49] RUN cp /usr/share/zoneinfo/America/New_York /etc/localtime
+#31 sha256:6772f1df1f2e1f441992563a75ed6d62fa9a6c0e6e3a9f07536fc9f0c314f38d
+#31 CACHED
+
+#10 [ 6/49] RUN dnf -y install --allowerasing --nobest      curl      gcc      docker-ce      emacs      geos-devel      gdal      gdal-devel      glibc-langpack-en      graphviz      grass      grass-devel      java-11-openjdk-devel      langpacks-en      nano      perl-Getopt-Long      proj      proj-devel      python3-devel      python3-GitPython      python3-pika      python3-pip      python3-cryptography      python3-PyYAML      python3-matplotlib      python3-numpy      python3-pandas      python3-pyproj      python3-scipy      python3-shapely      sudo      supervisor      tar      vim      wget
+#10 sha256:c61abb2d0af467065951f93ad2b5526cbc6bd8f5b242b79dc5012d6ecb9fb9f5
+#10 CACHED
+
+#8 [ 4/49] RUN dnf -y update &&     dnf -y install 'dnf-command(config-manager)' &&     dnf -y config-manager --set-enabled powertools &&     dnf -y config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo &&     dnf -y install epel-release
+#8 sha256:993add773152f2237593e790f5a0b5434108a2df54bd10ff264eb21777a53cc8
+#8 CACHED
+
+#9 [ 5/49] RUN dnf -y groupinstall "Development Tools"
+#9 sha256:2d30c691f2c8425a21d8a3cca7f618a00d59a6cb771567896376e02e90b11180
+#9 CACHED
+
+#46 [41/49] RUN mkdir /home/submithost/.pegasus     && echo -e "#!/usr/bin/env python3\nUSERNAME='submithost'\nPASSWORD='submithost123'\nAUTHENTICATION='NoAuthentication'\nSERVER_HOST='0.0.0.0'\n" >> /home/submithost/.pegasus/service.py     && chmod u+x /home/submithost/.pegasus/service.py
+#46 sha256:14b8e31f3529612b13d9a00215b62e6c7228392b34a4f2edbec5bc50a02fd5aa
+#46 CACHED
+
+#47 [42/49] ADD ./.aws /home/submithost/.aws
+#47 sha256:070c0b67939b2bdc084d6f8c1dc46e38eb97a89be46a5325247c81aab26c8c23
+#47 CACHED
+
+#26 [21/49] RUN python3 -m pip install plotly
+#26 sha256:08786e90713a4d3f8639fa3d8491604fdba591c44ab158110d3a7cfe56765ddd
+#26 CACHED
+
+#39 [34/49] ADD ./.pegasus /root/.pegasus
+#39 sha256:85c4082598957c0d1565ed395960f329e109b401c13514a1d0d206e0ebaf0940
+#39 CACHED
+
+#42 [37/49] RUN chmod 555 /home/submithost/emulator/remotebin/titanLaunch.sh
+#42 sha256:917c8956a9718e7e06ed19b71be5c2f34d46958c0d6a7b0d09a1bcecd3f718c4
+#42 CACHED
+
+#21 [16/49] RUN python3 -m pip install GDAL==3.0.4
+#21 sha256:ed94c6307235c31c6cb0888250bd19264177256d830d99527c7a940cc09b374a
+#21 CACHED
+
+#33 [28/49] RUN usermod -a -G condor submithost
+#33 sha256:acfa056b3c46a058cc38c3e4eaa3f57c09498eccb72916c300dea40d90859167
+#33 CACHED
+
+#25 [20/49] RUN python3 -m pip install kaleido
+#25 sha256:d19f4500db3d3e3655f84f6bf44dbdc8e9404b3ef0f3a243e341ecf7f2a3370e
+#25 CACHED
+
+#13 [ 8/49] ADD ./config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+#13 sha256:f192a7a90629a3c41583300b39f480015970837625e1b75d7653eeb289bc5bc0
+#13 CACHED
+
+#36 [31/49] RUN dnf -y install https://download.pegasus.isi.edu/pegasus/5.0.5/pegasus-5.0.5-1.el8.x86_64.rpm
+#36 sha256:6fa9babe2752475ad549ebf95ad1dbc305e97fd1cb613d348d202e8b6430956d
+#36 CACHED
+
+#12 [ 7/49] ADD ./config/start.sh /start.sh
+#12 sha256:2289f25d033af3900775e579289c5c82564e2a08813762152f67651a6f839bb6
+#12 CACHED
+
+#15 [10/49] ADD ./config/htcondor-wrapper /usr/local/bin/htcondor-wrapper
+#15 sha256:f8e71bc1248c7d8f145994cd89bf7f636de9faaa0a11b7b9b18d779c95219a92
+#15 CACHED
+
+#14 [ 9/49] ADD ./config/wrapdocker /usr/local/bin/wrapdocker
+#14 sha256:f8e3dc272efebf607fa5babb3bd4e85a625d86a2f56aef9262b27f14f9df4357
+#14 CACHED
+
+#32 [27/49] RUN dnf -y config-manager --add-repo=https://research.cs.wisc.edu/htcondor/yum/repo.d/htcondor-stable-rhel8.repo &&     rpm --import https://research.cs.wisc.edu/htcondor/yum/RPM-GPG-KEY-HTCondor &&     dnf -y install condor minicondor &&     sed -i 's/condor@/submithost@/g' /etc/condor/config.d/00-minicondor
+#32 sha256:41f9c2e7f57a183e6b2a028ec3385e051ea1ec024cfc24e69be6d432ad1925ab
+#32 CACHED
+
+#20 [15/49] RUN python3 -m pip install elevation
+#20 sha256:4eeff3965d488609507cad7c93ccd85c1aa7777602c0e293c222674c2ca9ed1a
+#20 CACHED
+
+#29 [24/49] RUN jupyter nbextension enable --py --sys-prefix appmode
+#29 sha256:7b166c72fb85175c2be9d5c2fcfa54d486a26da9b71e92d7b9d047664131dbc5
+#29 CACHED
+
+#49 [44/49] ADD ./.pegasus/credentials.conf /home/submithost/.pegasus/credentials.conf
+#49 sha256:9502d414617054ec0606cd38845741ff7012a7e85ad540ed4b1aa8dcff2c3903
+#49 CACHED
+
+#53 [48/49] RUN echo -e "export PATH=/home/submithost/.pyenv/bin:$PATH:/usr/lib64/mpich/bin" >> /home/submithost/.bashrcƒ
+#53 sha256:7ed7fb9345d4f8a2f9e7ed9cb9da934e3c83db6b511d8f5d46842ca32c62ccb0
+#53 CACHED
+
+#52 [47/49] ADD ./config/kernel.json /usr/local/share/jupyter/kernels/python3/kernel.json
+#52 sha256:fc89274de6bb79984d2b15c2eadf2b8e280768ab39e8fb2834bc8e6130b472d0
+#52 CACHED
+
+#16 [11/49] RUN chmod +x /usr/local/bin/wrapdocker /usr/local/bin/htcondor-wrapper
+#16 sha256:a7c9071b8c24381dbda2a770e5284588286ab0e8d2f87259a8bc79890b667348
+#16 CACHED
+
+#43 [38/49] RUN chmod 555 /home/submithost/emulator/remotebin/octaveLaunch.sh
+#43 sha256:0da2c7711714703de76a7c5aa3d8c11a45eabd84ce32037f1e086106d261d83d
+#43 CACHED
+
+#27 [22/49] RUN python3 -m pip install rasterio
+#27 sha256:00eff2ccddd0e3704b906c0a9979cf763eb68759953e51ef7d88c1ff08561747
+#27 CACHED
+
+#44 [39/49] RUN echo -e "submithost ALL=(ALL)       NOPASSWD:ALL\n" >> /etc/sudoers
+#44 sha256:372555df5a9ff9ca84080f4d97f17837aa007e292b8614c9f1897e0bc0ab5480
+#44 CACHED
+
+#34 [29/49] RUN chmod -R g+w /var/{lib,log,lock,run}/condor
+#34 sha256:02b63ae4ee1661a149433b79380c6449584ff89410dc04fa8577249f2d99fbfb
+#34 CACHED
+
+#40 [35/49] ADD ./emulator /home/submithost/emulator
+#40 sha256:a63792f66aef814f4f13260473ad80170d51ac042c173d69fd30a90fb3ad7e00
+#40 CACHED
+
+#37 [32/49] RUN dnf -y install --allowerasing --nobest      octave      octave-devel
+#37 sha256:ce029b0131b80495dfb4248010784df0fc7460bc9a52863860c314381b523f6f
+#37 CACHED
+
+#38 [33/49] ADD ./.aws /root/.aws
+#38 sha256:cd08e63bf456a44b2a4e4e42864280cab2a5caf43f06fdc5ab9dda224a5017e8
+#38 CACHED
+
+#18 [13/49] RUN python3 -m pip install 'setuptools_scm>=6'
+#18 sha256:63658d2a7647f95712c177ddb042b3245e16dd67fd7371a4c6fabcb7c35607d0
+#18 CACHED
+
+#48 [43/49] RUN chown -R submithost:submithost-group /home/submithost/.aws
+#48 sha256:9fffb424a3908eed3be10429dafc2d8032cf219a7859879335f049106c318ca0
+#48 CACHED
+
+#28 [23/49] RUN python3 -m pip install appmode
+#28 sha256:f5cca6523ffd839734a88adb48e89f1c9d7749c7757557e5a4cb414c6b3f5206
+#28 CACHED
+
+#45 [40/49] WORKDIR /home/submithost
+#45 sha256:86560ad1b6e29f141214625ddaf3a485bf563a74f4e537321834bef89e65f6ef
+#45 CACHED
+
+#23 [18/49] RUN python3 -m pip install hublib
+#23 sha256:5bd5a578b534f3d5be71fda27f3a1ad3313673acf8900f7123a84d6c9a9bdd90
+#23 CACHED
+
+#22 [17/49] RUN python3 -m pip install geopandas
+#22 sha256:fbc0e296ee5923f5904c1bdda3f792554c0bd3aaac17986be88b9c6cf9c50d2b
+#22 CACHED
+
+#30 [25/49] RUN jupyter serverextension enable --py --sys-prefix appmode
+#30 sha256:c247388b20db546c82d8a0186e573f40f6b59c31310df2c7ee9b2d0fbfcd7773
+#30 CACHED
+
+#41 [36/49] RUN chown -R submithost:submithost-group /home/submithost/emulator
+#41 sha256:20dddcfc8329bdaa6ef6897084c06cdf623d787e8df58e9d6bf06fafee66414d
+#41 CACHED
+
+#50 [45/49] RUN chown -R submithost:submithost-group /home/submithost/.pegasus/credentials.conf
+#50 sha256:4ff18eb407eaf1e8a9a6149085a844a415eb224b0526732de686f1dde01a4428
+#50 CACHED
+
+#51 [46/49] RUN pegasus-db-admin create
+#51 sha256:ce44dabf49165b09afe26ce51bfd6c4a6bc8127be0e5c5efd76a99fc89196a55
+#51 CACHED
+
+#17 [12/49] RUN usermod -aG docker submithost
+#17 sha256:ba3e437e2b7259d130a8775611499072cc81b292521966e08c74b1935ec9486b
+#17 CACHED
+
+#24 [19/49] RUN python3 -m pip install jupyter
+#24 sha256:07726ffd93cedad03aa46fb66631759915b330e07025d8f6eed42acf3be72bb5
+#24 CACHED
+
+#35 [30/49] ADD ./config/10-dynamic-slots /etc/condor/config.d/10-dynamic-slots
+#35 sha256:15b6ac6fbc9873328e7c1afecdfa49ec0b2a49931e259979df18e748b970a380
+#35 CACHED
+
+#54 [49/49] RUN mkdir /home/submithost/.jupyter     && echo "{ "NotebookApp": { "password": "sha1:30a323540baa:6eec8eaf3b4e0f44f2f2aa7b504f80d5bf0ad745" } }" >> /home/submithost/.jupyter/jupyter_notebook_config.json
+#54 sha256:cac4414fab6290e38fedc37c9f2f78b23c0c80c3148d9dc438b181470aa7304a
+#54 CACHED
+
+#55 exporting to image
+#55 sha256:e8c613e07b0b7ff33893b694f7759a10d42e180f2b4dc349fb57dc6b71dcab00
+#55 exporting layers done
+#55 writing image sha256:f84aeabbb6807a271df04dfd44178ffcb662787a42ffcf067ae765a2b1df9210 done
+#55 naming to docker.io/library/submithostimage done
+#55 DONE 0.1s
