@@ -24,53 +24,39 @@ See [Amazon AWS Configuration and Credential File Setting](https://docs.aws.amaz
 
 ## Pegasus WMS requires three credential files for Pegasus AWS Batch:
 
- .aws/conf, example:
-[default]
- region = us-east-2
+.aws/conf:<br/>
+[default]<br/>
+region = us-east-2
 
-.aws/credentials, example:
-[default]
-aws_access_key_id = *
+.aws/credentials:<br/>
+[default]<br/>
+aws_access_key_id = *<br/>
 aws_secret_access_key = *
 
- .pegasus/credentials.conf, example:
- [amazon]
- endpoint = https://s3.amazonaws.com
- Max object size in MB
- max_object_size = 1024
- multipart_uploads = True
- ranged_downloads = True
- [user@amazon]
- access_key = *
- secret_key = *
+.pegasus/credentials.conf:<br/>
+[amazon]<br/>
+endpoint = https://s3.amazonaws.com<br/>
+#Max object size in MB<br/>
+max_object_size = 1024<br/>
+multipart_uploads = True<br/>
+ranged_downloads = True<br/>
+[user@amazon]<br/>
+access_key = *<br/>
+secret_key = *
 
- where * is replaced with your Amazon AWS credential information.
+where * is replaced with your Amazon AWS credentials information.
 
+Notes: 
 
-
-Example conf and credential file formats:
-
-conf:
-
-[default]<br />
-account_id = *<br />
-region = * 
-
-credentials:
-
-[default]<br />
-aws_access_key_id = *<br>
-aws_secret_access_key = *
-
-Where * is replaced with your Amazon AWS configuration and credential information.
-
-Note: see ./submithost/emulator/pegasusrc for a note on region usage for Pegasus WMS. 
+See ./submithost/pegasus-wms-configuration-files/pegasusrc_template for a note on region usage for Pegasus WMS.
+ 
+See ./submithost/pegasus-wms-configuration-files/compute-env.json for the Amazon AWS bib percentage used. Currently set to 20%.
 
 ### pegasus-wms-configuration-scripts directory
  
 **Note: source configure.sh must be completed before building the submit host an remote host Docker images.**
 
-- Update template files in the submithost and remotehost directories.
+- Update creditionals template files in the submithost and remotehost directories.
 
 	cd ./pegasus-wms-configuration_scripts<br>
 	source configure.sh<br>
