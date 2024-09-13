@@ -50,7 +50,7 @@ Notes:
 
 See ./submithost/pegasus-wms-configuration-files/pegasusrc_template for a note on region usage for Pegasus WMS.
  
-See ./submithost/pegasus-wms-configuration-files/compute-env.json for the Amazon AWS bib percentage used. Currently set to 20%.
+See ./submithost/pegasus-wms-configuration-files/compute-env.json for the Amazon AWS bid percentage used. Currently set to 20%.
 
 ### pegasus-wms-configuration-scripts directory
  
