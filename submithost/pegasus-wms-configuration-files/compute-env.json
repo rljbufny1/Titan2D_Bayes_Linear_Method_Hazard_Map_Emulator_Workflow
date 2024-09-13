@@ -1,0 +1,26 @@
+{
+  
+  "state": "ENABLED",
+  "type": "MANAGED",
+  "computeResources": {
+    "subnets": [
+      "subnet-0cfbe9cb6f0998913"
+    ],
+    "type": "EC2",
+    "tags": {
+      "Name": "Batch Instance - optimal"
+    },
+    "desiredvCpus": 0,
+    "minvCpus": 0,
+    "instanceTypes": [
+      "optimal"
+    ],
+    "securityGroupIds": [
+      "sg-01eaffd574eb9d6bd"
+    ],
+    "instanceRole": "ecsInstanceRole" ,
+    "maxvCpus": 256,
+    "bidPercentage": 20
+  },
+  "serviceRole": "AWSBatchServiceRole"
+}

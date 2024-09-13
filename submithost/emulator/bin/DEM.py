@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------------------------------------
 # Class: DEM
-# Component of: Titan2D Emulator
+# Component of: Titan2D Hazard Map Emulator Workflow
 # Called from: Invoked from emulator.ipynb
 # Purpose: Download a Shuttle Radar Topography Mission (SRTM) 30 m Global 1 arc second V0003 GeoTiff DEM
 #          for the selected volcano and convert to GRASS GIS raster format for Titan2D.

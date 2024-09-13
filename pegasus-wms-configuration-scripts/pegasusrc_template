@@ -1,0 +1,51 @@
+# References:
+# https://htcondor.readthedocs.io/en/latest/admin-manual/configuration-macros.html#configuration-file-entries-for-dagman
+# https://pegasus.isi.edu/documentation/reference-guide/configuration.html#properties
+
+pegasus.catalog.site.file=./conf/sites.xml
+
+pegasus.data.configuration = nonsharedfs
+
+pegasus.catalog.replica  File
+pegasus.catalog.replica.file ./conf/rc.data
+
+pegasus.clusterer.job.aggregator AWSBatch
+
+#cluster even single jobs on a level
+pegasus.clusterer.allow.single True
+
+pegasus.integrity.checking none
+
+pegasus.register False
+
+# Properties required to run on AWS Batch
+# This line gets a location constraint error
+#pegasus.aws.region=us-east-1
+# Per https://docs.aws.amazon.com/cli/latest/reference/s3api/get-bucket-location.html,
+# Buckets in Region us-east-1 have a LocationConstraint of null.
+# aws s3api get-bucket-location --bucket titan2d-workdir-bucket returns
+#{
+# "LocationConstraint": null
+#}
+# causing Pegasus to get an error
+# Using us-east-2
+pegasus.aws.region=AMAZON_AWS_REGION
+
+# your AWS account id ( in digits)
+pegasus.aws.account=AMAZON_AWS_ACCOUNT_ID
+
+# ARN - Amazon Resource Name
+
+# ARN of the created job definition using pegasus-aws-batch
+pegasus.aws.batch.job_definition=AMAZON_AWS_BATCH_PREFIX-job-definition
+
+# ARN of the created compute environment using pegasus-aws-batch
+pegasus.aws.batch.compute_environment=AMAZON_AWS_BATCH_PREFIX-compute-env
+
+# ARN of the created job queue using pegasus-aws-batch
+pegasus.aws.batch.job_queue=AMAZON_AWS_BATCH_PREFIX-job-queue
+
+dagman.retry = 0
+
+
+

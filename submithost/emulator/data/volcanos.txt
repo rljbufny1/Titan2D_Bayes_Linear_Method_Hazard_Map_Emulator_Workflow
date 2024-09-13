@@ -259,7 +259,7 @@ COATEPEQUE CALDERA           :El Salvador         :13.87 :N : 89.55 :W :  746
 COCHONS, ILE AUX             :Indian O.-S         :46.10 :S : 50.23 :E :  775 
 COLACHI                      :Chile-N             :23.23 :S : 67.65 :W : 5631 
 COLEMAN SEAMOUNT             :Solomon Is-SW Pac   : 8.83 :S :157.17 :E :-99999
-COLIMA VOLC COMPLEX          :Mexico              :19.514:N :103.62 :W : 4100 
+COLIMA VOLC COMPLEX          :Mexico              :19.512727:N :103.617241 :W : 4100 
 COLLUMA, CERRO               :Bolivia             :18.50 :S : 68.07 :W : 3876 
 COLO [UNA UNA]               :Sulawesi-Indonesia  : 0.17 :S :121.608:E :  507 
 CONCEPCION                   :Nicaragua           :11.538:N : 85.623:W : 1610 

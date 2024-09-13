@@ -1,4 +1,20 @@
-# Install remotehost docker image for Pegasus WMS pegasus-aws-batch.
+#----------------------------------------------------------------------------------------------------------------------
+# Dockerfile to install the remote host docker image for Pegasus WMS pegasus-aws-batch.
+#
+# Component of: Titan2D Hazard Map Emulator Workflow
+# Purpose: Run a Pegasus WMS workflow on Amazon AWS
+# Author: Renette Jones-Ivey
+# Date: Sept 2024
+#
+# Important: need to source ../pegasus-wms-configuration-scripts/configure.sh before building the docker image.
+# See ../pegasus-wms-configuration-scripts/configure.sh for more information.
+#
+# When the remote host docker image is created or updated,
+# need to create or update the Amazon Elastic Container Registry repository remotehost docker image,
+# this requires that the ~/.aws/credential aws access key is activated via the Amazon AWS console.
+# See ./build-and-push-docker-image-to-ECR.sh for more information.
+
+#---------------------------------------------------------------------------------------------------------------------
 
 # References:
 # https://pegasus.isi.edu/documentation/user-guide/execution-environments.html
@@ -6,15 +22,10 @@
 # https://github.com/jsperhac/titan2d-docker
 # https://wiki.octave.org/Octave_for_GNU/Linux
 
-# When the image is created or updated,
-# need to create or update the Amazon Elastic Container Registry repository remotehost docker image,
-# this requires that the ~/.aws/credential aws access key is activated via the Amazon AWS console.
-# See ./build-and-push-docker-image-to-ECR.sh for more information.
-
 # https://docs.docker.com/engine/reference/commandline/build/
 # --tag,-t Name
 # build:
-#   docker image build -t remotehostimage .
+#   docker image build -t remotehostimage . 2>&1 | tee dockerbuild.log
 
 # https://docs.docker.com/engine/reference/commandline/run/
 # --interactive,-i Keep STDIN open even if not attached

@@ -21,6 +21,33 @@ The remote host Docker container's image includes the bash fetch-and-run script 
 
 See [Amazon AWS Configuration and Credential File Setting](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for more information.
 
+
+## Pegasus WMS requires three credential files for Pegasus AWS Batch:
+
+ .aws/conf, example:
+[default]
+ region = us-east-2
+
+.aws/credentials, example:
+[default]
+aws_access_key_id = *
+aws_secret_access_key = *
+
+ .pegasus/credentials.conf, example:
+ [amazon]
+ endpoint = https://s3.amazonaws.com
+ Max object size in MB
+ max_object_size = 1024
+ multipart_uploads = True
+ ranged_downloads = True
+ [user@amazon]
+ access_key = *
+ secret_key = *
+
+ where * is replaced with your Amazon AWS credential information.
+
+
+
 Example conf and credential file formats:
 
 conf:
@@ -39,13 +66,13 @@ Where * is replaced with your Amazon AWS configuration and credential informatio
 
 Note: see ./submithost/emulator/pegasusrc for a note on region usage for Pegasus WMS. 
 
-### configure directory
+### pegasus-wms-configuration-scripts directory
  
 **Note: source configure.sh must be completed before building the submit host an remote host Docker images.**
 
 - Update template files in the submithost and remotehost directories.
 
-	cd ./configure<br>
+	cd ./pegasus-wms-configuration_scripts<br>
 	source configure.sh<br>
 
 ### remotehost directory
@@ -68,8 +95,7 @@ Note: see ./submithost/emulator/pegasusrc for a note on region usage for Pegasus
 	docker image build -t submithostimage . 2>&1 | tee build.log<br>
 	docker run --privileged --rm -p 9999:8888 submithostimage
 
-When the Sending DC_SET_READY message appears, open a web browser and enter the url localhost:9999, enter the password emulator and open emulator.ipynb.
-
+When the Sending DC_SET_READY message appears, open a web browser and enter the url localhost:9999/notebooks/emulator.ipynb and enter the password emulator.
 ### emulator.ipynb:
 
 This Jupyter notebook provides the interface for running the Titan2D Hazard Map Emulator Workflow.
