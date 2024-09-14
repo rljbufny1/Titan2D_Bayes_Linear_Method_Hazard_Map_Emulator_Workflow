@@ -4,7 +4,7 @@ This workflow tool produces Titan2D hazard maps that display the probability of 
 
 Titan2D is a computer model for simulating granular avalanches over digital elevation models (DEMs) of natural terrian. The Titan2D hazard maps are constructed by creating a statistical surrogate model of the Titan2D computer model, requiring numerous executions of the Titan2D computer model. The Pegasus Workflow Management System (WMS) provides the structured platform for automating and managing these numerous executions, including staging the jobs, distributing the work, submitting the jobs to run in parallel, as well as handling data flow dependencies and overcoming job failures.
 
-This tool is designed to follow the Pegasus WMS Amazon Batch execution environment which in turn is based on the Amazon AWS Fetch & Run Procedure. See [Pegasus WMS Documentaiton](https://pegasus.isi.edu/documentation) for more information.
+This tool is designed to follow the Pegasus WMS Amazon Batch execution environment which in turn is based on the Amazon AWS Fetch & Run Procedure. See [Pegasus WMS Documentation](https://pegasus.isi.edu/documentation) for more information.
 
 This tool runs two Docker containers, a submit host Docker container and a remote host Docker container. 
 
