@@ -46,7 +46,12 @@ function Gen_Titan_Input_Samples(datadir_, Nymacro)
     % Octave does not provide a lhsdesign function
     %r=lhsdesign(Nymacro,Ndiminmacro);
     r=BinOptLHSRand(Ndiminmacro,Nymacro);
-    
+    % For testing only:
+    %fprintf('size(r): %s\n', mat2str(size(r))); %[32 4]
+    %fprintf('r: [%s]\n', mat2str(r));
+    %r = flipud (r);
+    %fprintf('r: [%s]\n', mat2str(r));
+
     vol=minvol+(maxvol-minvol)*r(:,1);
     h=(vol/pi).^(1/3);
     radius=h;

@@ -1,38 +1,43 @@
-#----------------------------------------------------------------------------------------------------------------------
-# Dockerfile to install the submit host docker image for Pegasus WMS pegasus-aws-batch.
+#------------------------------------------------------------------------------------------------------------------------------
+# Dockerfile to install the submithostimage Docker image for Pegasus WMS pegasus-aws-batch.
 #
 # Component of: Titan2D Hazard Map Emulator Workflow
 # Purpose: Run a Pegasus WMS workflow on Amazon AWS
 # Author: Renette Jones-Ivey
 # Date: Sept 2024
 #
-# Important: need to source ../pegasus-wms-configuration-scripts/configure.sh before building the docker image.
+# Important: need to source ../pegasus-wms-configuration-scripts/configure.sh before building the submithostimage Docker image.
 # See ../pegasus-wms-configuration-scripts/configure.sh for more information.
-#---------------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------------------------------------
+
+# Dockerfile based on https://github.com/pegasus-isi/pegasus/tree/master/tutorial/docker/Dockerfile - Pegasus WMS version 5.0.5
 
 # References:
 # https://pegasus.isi.edu/documentation/user-guide/tutorial.html
-# https://pegasus.isi.edu/documentation/user-guide/execution-environments.html
+# https://pegasus.isi.edu/documentation/user-guide/deployment-scenarios.html#
 # https://aws.amazon.com/blogs/compute/creating-a-simple-fetch-and-run-aws-batch-job
-
-# Important: source ../pegasus-wms-configuration-scripts/configure.sh before building the docker image
 
 # https://docs.docker.com/engine/reference/commandline/build/
 # --tag,-t Name
 # build:
+#   # docker builder prune to remove cache first
 #   docker image build -t submithostimage . 2>&1 | tee dockerbuild.log
 
 # https://docs.docker.com/engine/reference/commandline/run/
-# --interactive,-i Keep STDIN open even if not attached
-# --tty,-t Allocate a pseudo-TTY
-# run:
-#   For testing:
-#   docker run -it submithostimage /bin/sh
+# --interactive,-i: Keep STDIN open
+# --publish,-p: Publish a container's (ports) to the host
+# --rm: Remove container when it exits
+# --tty,-t: Allocate a pseudo-TTY
+# --volume,-v: Bind mount a volume
 #
-#   Use this form:
-#   docker run --privileged --rm -p 9999:8888 submithostimage
+# run:
+#   docker run --privileged --rm -v $PWD/emulator/LOCAL/shared-storage:/home/submithost/emulator/LOCAL/shared-storage -p 9999:8888 submithostimage
+
 #   When the Sending DC_SET_READY message appears,
 #   open a web browser and enter the url submithost:9999, enter the password emulator and open emulator.ipynb
+#
+#   For testing:
+#   docker run -it submithostimage /bin/sh
 #
 #   This form maintains previous information:
 #   docker run --privileged --rm --name submithostimage-container -p 9999:8888 submithostimage
@@ -48,6 +53,7 @@
 
 # Rocky Linux is an open-source enterprise operating system compatible with Red Hat Enterprise Linux.
 FROM rockylinux:8
+LABEL desc="submithost docker image for Pegasus WMS pegasus-aws-batch."
 
 RUN groupadd --gid 808 submithost-group
 RUN useradd --gid 808 --uid 550 --create-home --password '$6$ouJkMasm5X8E4Aye$QTFH2cHk4b8/TmzAcCxbTz7Y84xyNFs.gqm/HWEykdngmOgELums1qOi3e6r8Z.j7GEA9bObS/2pTN1WArGNf0' submithost
@@ -88,14 +94,6 @@ RUN dnf -y install --allowerasing --nobest \
      tar \
      vim \
      wget
-#     python3-cryptography \
-#     python3-PyYAML \
-#    python3-matplotlib \
-#     python3-numpy \
-#     python3-pandas \
-#     python3-pyproj \
-#     python3-scipy \
-#     python3-shapely \
 
 # Python packages
 RUN python3 -m pip install --upgrade pip
@@ -110,7 +108,7 @@ RUN python3 -m pip install elevation
 RUN python3 -m pip install GDAL==3.0.4
 RUN python3 -m pip install geopandas
 RUN python3 -m pip install hublib
-# On Sept 12, 2024, the default version of ipywidgets installed in version 7.8.4.
+# Reverified on Sept 12, 2024, the default version of ipywidgets installed is version 7.8.4.
 # With this version, the Output widget is not working.
 RUN python3 -m pip install ipywidgets==7.0.0
 RUN python3 -m pip install jupyter
@@ -118,6 +116,7 @@ RUN python3 -m pip install kaleido
 RUN python3 -m pip install matplotlib
 RUN python3 -m pip install numpy
 RUN python3 -m pip install pandas
+RUN python3 -m pip install pillow
 RUN python3 -m pip install plotly
 RUN python3 -m pip install pyproj
 RUN python3 -m pip install PyYAML
@@ -133,10 +132,10 @@ RUN python3 -m pip install appmode
 RUN jupyter nbextension enable --py --sys-prefix appmode
 RUN jupyter serverextension enable --py --sys-prefix appmode
 
-ADD ../../pegasus-wms-setup-files/config/start.sh /start.sh
-ADD ../../pegasus-wms-setup-files/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-ADD ../../pegasus-wms-setup-files/config/wrapdocker /usr/local/bin/wrapdocker
-ADD ../../pegasus-wms-setup-files/config/htcondor-wrapper /usr/local/bin/htcondor-wrapper
+ADD ./pegasus-wms-setup-files/config/start.sh /start.sh
+ADD ./pegasus-wms-setup-files/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+ADD ./pegasus-wms-setup-files/config/wrapdocker /usr/local/bin/wrapdocker
+ADD ./pegasus-wms-setup-files/config/htcondor-wrapper /usr/local/bin/htcondor-wrapper
 RUN chmod +x /usr/local/bin/wrapdocker /usr/local/bin/htcondor-wrapper
 RUN usermod -aG docker submithost
 
@@ -155,7 +154,7 @@ RUN dnf -y config-manager --add-repo=https://research.cs.wisc.edu/htcondor/yum/r
 
 RUN usermod -a -G condor submithost
 RUN chmod -R g+w /var/{lib,log,lock,run}/condor
-ADD ../../pegasus-wms-setup-files/config/10-dynamic-slots /etc/condor/config.d/10-dynamic-slots
+ADD ./pegasus-wms-setup-files/config/10-dynamic-slots /etc/condor/config.d/10-dynamic-slots
 
 # ====================================================================
 # Pegasus installation
@@ -171,32 +170,33 @@ RUN dnf -y install https://download.pegasus.isi.edu/pegasus/$PEGASUS_VERSION/peg
 # Octave installation
 # ====================================================================
 
-# Installs Octave 5.2.0.
-# For Octave 5.2.0 qt not available as a graphics toolkit,
-# available_graphics_toolkits() only displays gnuplot
-# https://trac.macports.org/ticket/58275
+# Reverified on Sept 12, 2024, the default version of Octave installed is version 5.2.0.
+# For Octave 5.2.0, qt not available as a graphics toolkit,
+# available_graphics_toolkits() only displays gnuplot.
+# Also see: https://trac.macports.org/ticket/58275.
+# Created ./emulator/bin/view_phm.py based on ./emulator/bin/view_phm.m which depends on qt.
 
 RUN dnf -y install --allowerasing --nobest \
      octave \
      octave-devel
 
 # For the Docker build, cd ~ > /root
-ADD ../../amazon-aws-credentials/.aws /root/.aws
-ADD ../../amazon-aws-credentials/.pegasus /root/.pegasus
+ADD ./amazon-aws-credentials/.aws /root/.aws
+ADD ./amazon-aws-credentials/.pegasus /root/.pegasus
 
 ADD ./emulator /home/submithost/emulator
 RUN chown -R submithost:submithost-group /home/submithost/emulator
 RUN chmod 555 /home/submithost/emulator/remotebin/titanLaunch.sh
 RUN chmod 555 /home/submithost/emulator/remotebin/octaveLaunch.sh
 
-ADD ../../pegasus-wms-configuration-files/pegasusrc_template /home/submithost/emulator/pegasusrc_template
-ADD ../../pegasus-wms-scripts /home/submithost/emulator/pegasus-wms-scripts
+ADD ./pegasus-wms-configuration-files/pegasusrc_template /home/submithost/emulator/pegasusrc_template
+ADD ./pegasus-wms-scripts /home/submithost/emulator/pegasus-wms-scripts
 
 RUN mkdir /home/submithost/emulator/conf
-ADD ../../pegasus-wms-configuration-files/compute-env.json /home/submithost/emulator/conf/compute-env.json
-ADD ../../pegasus-wms-configuration-files/job-definition.json /home/submithost/emulator/conf/job-definition.json
-ADD ../../pegasus-wms-configuration-files/job-queue.json /home/submithost/emulator/conf/job-queue.json
-ADD ../../pegasus-wms-configuration-files/sites.xml /home/submithost/emulator/conf/sites.xml
+ADD ./pegasus-wms-configuration-files/compute-env.json /home/submithost/emulator/conf/compute-env.json
+ADD ./pegasus-wms-configuration-files/job-definition.json /home/submithost/emulator/conf/job-definition.json
+ADD ./pegasus-wms-configuration-files/job-queue.json /home/submithost/emulator/conf/job-queue.json
+ADD ./pegasus-wms-configuration-files/sites.xml /home/submithost/emulator/conf/sites.xml
 
 #RUN echo -e "condor_master > /dev/null 2>&1" >> /home/submithost/.bashrc
 
@@ -212,9 +212,9 @@ RUN mkdir /home/submithost/.pegasus \
     && chmod u+x /home/submithost/.pegasus/service.py
 
 USER root
-ADD ../../amazon-aws-credentials/.aws /home/submithost/.aws
+ADD ./amazon-aws-credentials/.aws /home/submithost/.aws
 RUN chown -R submithost:submithost-group /home/submithost/.aws
-ADD ../../amazon-aws-credentials/.pegasus/credentials.conf /home/submithost/.pegasus/credentials.conf
+ADD ./amazon-aws-credentials/.pegasus/credentials.conf /home/submithost/.pegasus/credentials.conf
 RUN chown -R submithost:submithost-group /home/submithost/.pegasus/credentials.conf
 
 USER submithost
@@ -223,7 +223,7 @@ USER submithost
 RUN pegasus-db-admin create
 
 # Set Kernel for Jupyter (exposes PATH and PYTHONPATH for use when terminal from jupyter is used)
-ADD ../../pegasus-wms-setup-files/config/kernel.json /usr/local/share/jupyter/kernels/python3/kernel.json
+ADD ./pegasus-wms-setup-files/config/kernel.json /usr/local/share/jupyter/kernels/python3/kernel.json
 RUN echo -e "export PATH=/home/submithost/.pyenv/bin:\$PATH:/usr/lib64/mpich/bin" >> /home/submithost/.bashrcƒ
 
 # Set notebook password to 'emulator'. This pw will be used instead of token authentication

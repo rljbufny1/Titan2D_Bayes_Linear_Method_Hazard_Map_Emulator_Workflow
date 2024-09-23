@@ -1,3 +1,14 @@
+#----------------------------------------------------------------------------------------------------------------------
+# Component of: Titan2D Hazard Map Emulator Workflow
+# Purpose: Create hazrad map images
+# Called from: emulator.ipynb
+# Author: Renette Jones-Ivey
+# Date: Apr 1024
+#---------------------------------------------------------------------------------------------------------------------
+
+# References:
+# https://github.com/holoviz/datashader
+
 #from bokeh.plotting import show
 from colorcet import fire, rainbow4, kb
 #import datashader as ds
@@ -8,6 +19,7 @@ from datashader.transfer_functions import shade
 from datashader.transfer_functions import stack
 #import geopandas as geopd
 #import holoviews as hv
+import datetime
 import numpy as np
 import os
 #import pandas as pd
@@ -29,10 +41,9 @@ import matplotlib.pyplot as plt
 from Utils.read_in_zgrid import read_in_zgrid
 from Utils.transform2deg import transform2deg
 
+import ipywidgets as widgets
+from IPython.display import display, HTML, Markdown, clear_output, Javascript, IFrame
 
-# Running with python version 3.6. Apparently with more recent version of python,
-# pcolormesh(X,Y,C) with X(M,N), Y(M, N) and C (M,N,3), an image with RGB values (0-1 float),
-# is allowed.
 Unit_Test = False
 
 if Unit_Test == False:
@@ -70,17 +81,17 @@ def get_phm(proj_in, geodetic, hazmapfilename):
             line = fid.readline()
             #print ('line: ', line)
         crith = float(fid.readline().split()[0])
-        print_log('crith: ' + str(crith))
+        #print_log('crith: ' + str(crith))
         Ndiminmacro = int(fid.readline().split()[0])
-        print_log('Ndiminmacro: ' + str(Ndiminmacro))
+        #print_log('Ndiminmacro: ' + str(Ndiminmacro))
         W = float(fid.readline().split()[0])
-        print_log('W: ' + str(W))
+        #print_log('W: ' + str(W))
         Nxmap = int(fid.readline().split()[0])
-        print_log('Nxmap: ' + str(Nxmap))
+        #print_log('Nxmap: ' + str(Nxmap))
         XMAPWIWI2 = np.array(
             [list(map(float, fid.readline().split())) for _ in range(Nxmap)])
         Nresamp = int(fid.readline().split()[0])
-        print ('Nresamp: ', Nresamp)
+        #print ('Nresamp: ', Nresamp)
         XMACROw = np.array(
             [list(map(float, fid.readline().split())) for _ in range(Nresamp)])
 
@@ -116,10 +127,10 @@ def get_phm(proj_in, geodetic, hazmapfilename):
     diff = enumerate(np.diff(lats))
     ldiff = list(diff)
     NEAST = next(i for i, x in enumerate(np.diff(y)) if x != 0) + 1
-    print('NEAST: ', NEAST)
+    #print('NEAST: ', NEAST)
     # // is floor
     NNORTH = Nxmap // NEAST
-    print('NNORTH: ', NNORTH)
+    #print('NNORTH: ', NNORTH)
     EAST = lons.reshape(NEAST, NNORTH, order='F')
     NORTH = lats.reshape(NEAST, NNORTH, order='F')
     P = P.reshape(NEAST, NNORTH, order='F')
@@ -141,15 +152,17 @@ def view_phm (workingdir, resultsdir, volcname, volcano_lat_decimal_degrees, vol
     
     global xyz
     
-    print_log('Volcano Name: ' + str(volcname))
+    #print_log('Volcano Name: ' + str(volcname))
     
-    print_log('volcano_lat_decimal_degrees: ' + 
-          str(volcano_lat_decimal_degrees) + ' [Decimal Degrees]')
-    print_log('volcano_lon_decimal_degrees: ' +
-          str(volcano_lon_decimal_degrees) + ' [Decimal Degrees]')
+    #print_log('volcano_lat_decimal_degrees: ' +
+          #str(volcano_lat_decimal_degrees) + ' [Decimal Degrees]')
+    #print_log('volcano_lon_decimal_degrees: ' +
+          #str(volcano_lon_decimal_degrees) + ' [Decimal Degrees]')
         
-    start_time = time.time()
-    
+    #start_time = time.time()
+    latitude = "%s [degrees north -90 to 90]" %str(volcano_lat_decimal_degrees)
+    longitude = "%s [degrees east -180 to 180]" %str(volcano_lon_decimal_degrees)
+
     proj_in, geodetic = transform2deg (volcano_lat_decimal_degrees, volcano_lon_decimal_degrees)
  
     filename = os.path.join(resultsdir, 'elevation.grid')
@@ -260,6 +273,20 @@ def view_phm (workingdir, resultsdir, volcname, volcano_lat_decimal_degrees, vol
     #print ('type(stacked): ', type(stacked))
     #plt.title ('P > %.2f [m]' %crith, fontsize=14, fontweight='demibold')
     #fig, ax = plt.subplots()
+    
+    # Display title page
+    header = 'Hazard Report'
+    utc_now = datetime.datetime.utcnow()
+    utc_now = str(datetime.datetime(utc_now.year, utc_now.month, utc_now.day, utc_now.hour, utc_now.minute, utc_now.second))
+
+    display(Markdown('# <center>'+header))
+    display(Markdown('# <center> '))
+    display(Markdown('### <left> Date/Time UTC: %s' %utc_now))
+    display(Markdown('### <left> Volcano Name: %s' %volcname))
+    display(Markdown('### <left> Latitude: %s' %latitude))
+    display(Markdown('### <left> Longitude: %s' %longitude))
+    display(Markdown('# <center> '))
+
     # '''
     fig, ax = plt.subplots(figsize=(8, 8))#, layout='constrained')
     plt.imshow(stacked.to_pil(), extent=[glon[0], glon[-1], glat[0], glat[-1]])
@@ -276,7 +303,7 @@ def view_phm (workingdir, resultsdir, volcname, volcano_lat_decimal_degrees, vol
     fig.colorbar(norm, ax=ax, orientation='vertical', fraction=0.0425, pad=0.04)
     #norm = colors.Normalize(vmin=0,vmax=1)
     #cbar = colorbar.ColorbarBase(ax=ax, cmap=cmap, norm=norm, orientation='vertical')
-    plt.savefig(os.path.join(workingdir, 'P.png'))
+    plt.savefig(os.path.join(resultsdir, 'P.png'))
     # '''
     #image = np.array(stacked.to_pil())
     #print ('image.shape: ', image.shape)
@@ -302,25 +329,74 @@ def view_phm (workingdir, resultsdir, volcname, volcano_lat_decimal_degrees, vol
     fig.colorbar(norm, ax=ax, orientation='vertical', fraction=0.0425, pad=0.04)
     #norm = colors.Normalize(vmin=0,vmax=1)
     #cbar = colorbar.ColorbarBase(ax=ax, cmap=cmap, norm=norm, orientation='vertical')
-    plt.savefig(os.path.join(workingdir, 'SDP.png'))
+    plt.savefig(os.path.join(resultsdir, 'SDP.png'))
     # '''
     #image = np.array(stacked.to_pil())
     #print ('image.shape: ', image.shape)
-    print('Elapsed time: ' + str(time.time() - start_time))
+    
+    # Create report
+    import matplotlib.backends.backend_pdf
+    from PIL import Image as PIL_image
+    pdffilepath = os.path.join(resultsdir, 'Hazard_Report.pdf')
+    pdf = matplotlib.backends.backend_pdf.PdfPages(pdffilepath)
 
+    # Fig and settings for the PDF
+    fig = plt.figure()
+    plt.axis('off')
+    plt.text(.5, .9, header+'\n\n', va='top', ha='center', fontsize=12, fontweight='bold', wrap=False)
+    plt.text(.1, .64, 'Date/Time UTC: %s' %utc_now, va='top', ha='left', fontsize=10, fontweight='bold', wrap=False)
+    plt.text(.1, .58, 'Volcano Name: %s' %volcname, va='top', ha='left', fontsize=10, fontweight='bold', wrap=False)
+    plt.text(.1, .52, 'Latitude: %s' %latitude, va='top', ha='left', fontsize=10, fontweight='bold', wrap=False)
+    plt.text(.1, .46, 'Longitude: %s' %longitude, va='top', ha='left', fontsize=10, fontweight='bold', wrap=False)
+    pdf.savefig(fig)
+    plt.close()
+
+    figures = [os.path.join(resultsdir, 'P.png'), os.path.join(resultsdir, 'SDP.png')]
+    num_figures = 2
+    
+    for i in range(num_figures):
+
+        figure = figures[i]
+        #print ('figure: ', figure)
+        figure_basename = os.path.basename(figure)
+        #print ('figure_basename: ', figure_basename)
+        #figure_name = figure_basename[0:-4]
+        #print ('figure_name: ', figure_name)
+        figure_title = figure_basename
+        
+        figure_caption = 'fig. %d' %(i+1)
+        
+        image = PIL_image.open(figure) #plt_image.imread(figure)
+        #print ('type(image): ', type(image)) #<class 'PIL.PngImagePlugin.PngImageFile'>
+        
+        # Fig and settings for the PDF
+        fig = plt.figure(figsize=(50, 50))
+        ax = plt.gca()
+        ax.get_xaxis().set_visible(False)
+        ax.get_yaxis().set_visible(False)
+        #print ('ax.axis: ', ax.axis()) #(0.0, 1.0, 0.0, 1.0)
+        xmin, xmax, ymin, ymax = ax.axis()
+        
+        ax.imshow(image)
+        ax.text(.5, ymax + .05, figure_title+'\n\n', va='top', ha='center', fontsize=70, fontweight='bold', wrap=False, transform=ax.transAxes)
+        ax.text(.5, ymin - .105, figure_caption+'\n\n', va='bottom', ha='center', fontsize=70, fontweight='bold', wrap=False, transform=ax.transAxes)
+        pdf.savefig(fig)
+        plt.close()
+    
+    pdf.close()
+    #print('Elapsed time: ' + str(time.time() - start_time))
 
 
 # Unit Testing 
 if Unit_Test:
     
     # Add to PYTHONPATH
-    sys.path.append(
-        '/Users/renettej/AAA_Titan2D_Hazard_Map_Emulator_Workflows/submithost/emulators/BLM-emulator/bin')
+    #sys.path.append('.')
     
     volcname = 'COLIMA VOLC COMPLEX'
     volcano_lat_decimal_degrees = 19.514
     volcano_lon_decimal_degrees = -103.62
 
-    view_phm ( '.', '/Users/renettej/A_BLM/LOCAL/shared-storage', volcname, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees)
+    view_phm ( '.', '../LOCAL_COLIMA VOLC COMPLEX/shared-storage', volcname, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees)
 
 

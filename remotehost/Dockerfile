@@ -1,44 +1,57 @@
-#----------------------------------------------------------------------------------------------------------------------
-# Dockerfile to install the remote host docker image for Pegasus WMS pegasus-aws-batch.
+#------------------------------------------------------------------------------------------------------------------------------
+# Dockerfile to install the remote host Docker image for Pegasus WMS pegasus-aws-batch.
 #
 # Component of: Titan2D Hazard Map Emulator Workflow
 # Purpose: Run a Pegasus WMS workflow on Amazon AWS
 # Author: Renette Jones-Ivey
 # Date: Sept 2024
 #
-# Important: need to source ../pegasus-wms-configuration-scripts/configure.sh before building the docker image.
+# Important: need to source ../pegasus-wms-configuration-scripts/configure.sh before building the remotehostimage Docker image.
 # See ../pegasus-wms-configuration-scripts/configure.sh for more information.
 #
-# When the remote host docker image is created or updated,
-# need to create or update the Amazon Elastic Container Registry repository remotehost docker image,
-# this requires that the ~/.aws/credential aws access key is activated via the Amazon AWS console.
-# See ./build-and-push-docker-image-to-ECR.sh for more information.
+# When the remotehostimage Docker image is created or updated,
+# need to upload the image to the Amazon Elastic Container Registry repository.
+# See ./push-docker-image-to-ECR.sh for more information.
 
-#---------------------------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------------------------------------------
 
 # References:
-# https://pegasus.isi.edu/documentation/user-guide/execution-environments.html
+#
+# https://pegasus.isi.edu/documentation/user-guide/deployment-scenarios.html#
 # https://aws.amazon.com/blogs/compute/creating-a-simple-fetch-and-run-aws-batch-job
 # https://github.com/jsperhac/titan2d-docker
-# https://wiki.octave.org/Octave_for_GNU/Linux
 
 # https://docs.docker.com/engine/reference/commandline/build/
 # --tag,-t Name
 # build:
+#   # docker builder prune to remove cache first
 #   docker image build -t remotehostimage . 2>&1 | tee dockerbuild.log
-
+#
 # https://docs.docker.com/engine/reference/commandline/run/
 # --interactive,-i Keep STDIN open even if not attached
 # --tty,-t Allocate a pseudo-TTY
 # run:
-#   For initial testing:
-#   docker run -it remotehostimage /bin/sh
+#   For module testing only:
+#       Uncomment out lines to add and chmod the module_test directory as USER root.
+#       Comment out line to set the ENTRYPOINT.
+#       save
+#       docker image build -t remotehostimage . 2>&1 | tee dockerbuild.log
+#       docker run --rm -it remotehostimage /bin/sh
+#       cd module_test
+#       source ./titanLanch.sh
+#       cat titan2d.stderr and titan2d.stdout and verify that the module test run of Titan2D completed successfully.
+#       exit
+#       Comment out lines to add and chmod the module_test directory as USER root.
+#       Uncomment out line to set the ENTRYPOINT.
+#       save
 
-# System packages
+# ====================================================================
+# System installations
+# ====================================================================
 
-# See CCR vortex /etc/os-release: CentOS Linux version 7
-FROM centos:7
-LABEL desc="remotehost docker image for Pegasus WMS pegasus-aws-batch."
+# Rocky Linux is an open-source enterprise operating system compatible with Red Hat Enterprise Linux.
+FROM rockylinux:8
+LABEL desc="remotehost Docker image for Pegasus WMS pegasus-aws-batch."
 
 # Create directories for the build
 ENV TITAN_WSP=/opt/titan_wsp
@@ -46,25 +59,26 @@ ENV TITAN_WSP=/opt/titan_wsp
 # Core count for compilation
 ENV NUM_PROCESSES=4
 
-RUN yum -y update && \
-    yum -y install \
-        epel-release
-        
+RUN dnf -y update && \
+    dnf -y install 'dnf-command(config-manager)' && \
+    dnf -y config-manager --set-enabled powertools && \
+    dnf -y config-manager --add-repo=https://download.docker.com/linux/centos/docker-ce.repo && \
+    dnf -y install epel-release
+
 # Note: perl findutils, aws cli, unzip and futures required for pegasus-aws-batch
 
-RUN yum -y update && \
-    yum -y install \
+RUN dnf -y update && \
+    dnf -y install \
         autoconf \
         automake \
         gcc-c++ \
         git \
         make \
-        netcdf-4.3.3.1 \
 	    perl findutils \
-        python-devel \
-        python-pip \
+        python2-devel \
+        python2-pip \
         sudo \
-        swig3 \
+        swig \
         wget \
         which \
         unzip \
@@ -74,7 +88,9 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
 RUN unzip awscliv2.zip
 RUN sudo ./aws/install
 
-RUN python -m pip install futures
+# Python packages
+RUN python2 -m pip install --upgrade pip
+RUN python2 -m pip install futures
 
 # ====================================================================
 # hdf5 installation
@@ -117,18 +133,20 @@ RUN wget -q http://download.osgeo.org/gdal/${GDAL_VERSION}/gdal-${GDAL_VERSION}.
     make -j $NUM_PROCESSES && \
     make install
 
-# ====================================================================
+# ==========================================================================
 # titan2d configure, compile, and install
 # including:
 #   generate all autotools scripts (i.e. configure script and others).
-# ====================================================================
-#ENV TITAN_SWIG=`rpm -ql swig3 | grep bin | grep "/swig3"$ | awk -F 'swig3' '{print $1}'`
+#
+# Created the TITAN2D Titan2D_Hazard_Map_Emulator_Workflow_Remotehost branch
+# on Sept 18, 2024, master - 28ce6f4 506 commits
+# ==========================================================================
 
 ENV TITAN_SWIG=/usr/bin
 WORKDIR $TITAN_WSP/titan2d_bld/iccoptompmpi
 WORKDIR $TITAN_WSP
 
-RUN git clone https://github.com/TITAN2D/titan2d.git && \
+RUN git clone --single-branch --branch Titan2D_Hazard_Map_Emulator_Workflow_Remotehost https://github.com/TITAN2D/titan2d.git && \
     cd titan2d && \
     aclocal && autoheader && autoconf && automake --add-missing --copy && \
     cd $TITAN_WSP/titan2d_bld/iccoptompmpi && \
@@ -144,33 +162,25 @@ RUN git clone https://github.com/TITAN2D/titan2d.git && \
     make install
 
 # ====================================================================
-# octave-4.0.0 installation
+# Octave installation
 # ====================================================================
 
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk
+# Reverified on Sept 12, 2024, the default version of Octave installed is version 5.2.0.
+RUN dnf -y install --allowerasing --nobest \
+     octave \
+     octave-devel
 
-# Octave dependencies
-
-RUN yum-builddep -y octave
-
-# Fix A BLAS library was detected but found incompatible with your Fortran 77 compiler settings error configuring Octave-4.0.0
-RUN yum -y update && \
-    yum -y install \
-    blas-devel \
-    lapack-devel
-    
-# Octave-4.0.0
-RUN wget ftp://ftp.gnu.org/gnu/octave/octave-4.0.0.tar.gz && \
-    tar zxvf octave-4.0.0.tar.gz && \
-    cd octave-4.0.0 && \
-    ./configure --prefix=/usr/local/OCTAVE/4.0.0 && \
-    make -j $NUM_PROCESSES && \
-    make install
-
-# (For initial testing do not set ENTRYPOINT.)
 ADD fetch_and_run.sh /usr/local/bin/fetch_and_run.sh
+
+USER root
+RUN ln -s /usr/bin/python2.7 /usr/bin/python
+
+# For module testing only:
+#    Uncomment out lines to add and chmod the module_test directory as USER root.
+#    Comment out line to set the ENTRYPOINT.
+#ADD ./module_test /tmp/module_test
+#RUN chmod 777 /tmp/module_test
+
 WORKDIR /tmp
 USER nobody
 ENTRYPOINT ["/usr/local/bin/fetch_and_run.sh"]
-
-

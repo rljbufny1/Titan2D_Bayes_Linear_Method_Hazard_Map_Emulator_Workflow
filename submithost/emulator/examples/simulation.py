@@ -31,8 +31,8 @@ sim.setMatModel(
 )
 
 sim.setTimeProps(
-   max_iter=300,
-   max_time=100.0
+   max_iter=1000,
+   max_time=600
 )
 
 sim.setRestartOutput(

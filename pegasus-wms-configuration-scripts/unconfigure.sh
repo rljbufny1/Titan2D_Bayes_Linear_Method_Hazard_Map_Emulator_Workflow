@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cp -f -v ./build-and-push-docker-image-to-ECR_sh_template ../remotehost/build-and-push-docker-image-to-ECR.sh
+cp -f -v ./push-docker-image-to-ECR_sh_template ../remotehost/push-docker-image-to-ECR.sh
 
 cp -f -v ./aws_config_template ../submithost/amazon-aws-credentials/.aws/config
 cp -f -v ./aws_credentials_template ../submithost/amazon-aws-credentials/.aws/credentials

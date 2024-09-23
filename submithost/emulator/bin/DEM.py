@@ -1,7 +1,7 @@
 #----------------------------------------------------------------------------------------------------------------------
 # Class: DEM
 # Component of: Titan2D Hazard Map Emulator Workflow
-# Called from: Invoked from emulator.ipynb
+# Called from: Wrapper.py
 # Purpose: Download a Shuttle Radar Topography Mission (SRTM) 30 m Global 1 arc second V0003 GeoTiff DEM
 #          for the selected volcano and convert to GRASS GIS raster format for Titan2D.
 # Author: Renette Jones-Ivey
@@ -43,10 +43,10 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
          lat_south, lat_north, lon_west, lon_east,\
          grassgis_database, grassgis_location, grassgis_mapset, grassgis_map):
     
-    print ('DEM.py...')
+    #print ('DEM.py...')
     #print (argv)
     
-    print ('os.path.expanduser("~"): ', os.path.expanduser('~'))
+    print ('\nos.path.expanduser("~"): ', os.path.expanduser('~'))
     workingdir = os.getcwd()
     print ('workingdir: ', workingdir)
 
@@ -245,7 +245,7 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
     grass_script.run_command('r.colors', map = grassgis_map, color = 'elevation')
     
     # list rasters in mapset
-    print('g.list: ', grass_script.run_command('g.list', type='rast', flags='p'))
+    #print('g.list: ', grass_script.run_command('g.list', type='rast', flags='p')) #0
     
     filepath = os.path.join(grassgis_database, grassgis_location, grassgis_mapset, 'cellhd', grassgis_map)
     print ('\n%s:\n' %filepath)
@@ -254,9 +254,9 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
     f.close()
     print (output)
     
-    print (grass_script.run_command('r.compress', flags='p', map = grassgis_map))
+    #print (grass_script.run_command('r.compress', flags='p', map = grassgis_map)) #0
 
-    print (grass_script.run_command('g.proj', flags='p'))
+    #print (grass_script.run_command('g.proj', flags='p')) #0
       
     os.remove(gisrc)
     
@@ -266,12 +266,12 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
         tar.add(grassgis_database, arcname=os.path.basename(grassgis_database))
     
     elapsed_time = time.time() - start_time
-    print ('elapsed time: ', np.round(elapsed_time/60.0, 2), ' [min]')
+    #print ('elapsed time: ', np.round(elapsed_time/60.0, 2), ' [min]')
     
 if Unit_Testing == True:
     
     # Azufral, Volcan
-    workdir =  '/Users/renettej/AAA_Titan2D_Emulator/submithost/emulator'
+    workdir =  '/Users/[user name]/AAA_Titan2D_Bayes_Linear_Method_Hazard_Map_Emulator_Workflow/submithost/emulator'
     volcano_lat_decimal_degrees =  1.08
     volcano_lon_decimal_degrees = -77.68
     lat_south = 0.96

@@ -1,4 +1,4 @@
-%**********************************************************************
+%*************************************************************************
 % matlab script: view_phm.m
 %
 % argument(s): workingdir_
@@ -8,8 +8,8 @@
 % output(s): P.txt, SDP.txt, P.png, SDP.png
 %
 % Based on Keith Dalbey's script with
-% updates from Ramona's code to display the elevation grid
-%**********************************************************************
+% updates from E. Ramona Stefanescu's script to display the elevation grid
+%*************************************************************************
 
 function view_phm(datadir_,workingdir_)
 

@@ -1,40 +1,32 @@
 #!/bin/bash
 
+# rlj - bash script to update the Titan2D input file for all samples
+
+echo "setup.sh: $@"
+
 # Args:
-# $1 - working directory
-# $2 - matlab source directory, <tool>/bin
-# $3 - data directory <tool>/data
-# $4 - titan2dInputFile
-# $5 - titan2dInputFiled
-# $6 - titan2dInputFiledd
-# $7 - user minvol value
-# $8 - user maxvol value
-# $9 - user BEDMIN value
-# $10 - user BEDMAX value
-# $11 - user STARTUTMECEN value
-# $12 - user STARTUTMNCEN value
-# $13 - user STARTRADIUSMAX value
-# $14 - user ResamplePoints value
-# $15 - numSamples
-
 # double digits need {}
-echo "setup.sh "${1}" "${2}" "${3}" "${4}" "${5}" "${6}" "${7}" "${8}" "${9}" "${10}" "${11}" "${12}" "${13}" "${14}" "${15}
-
-workingdir=${1}
-bindir=${2}
-datadir=${3}
+workingdir=${1} #working directory
+bindir=${2} #matlab source directory, <tool>/bin
+datadir=${3} #data directory <tool>/data
 titan2dInputFile=${4}
 titan2dInputFiled=${5}
 titan2dInputFiledd=${6}
-minvol=${7}
-maxvol=${8}
-BEDMIN=${9}
-BEDMAX=${10}
-STARTUTMECEN=${11}
-STARTUTMNCEN=${12}
-STARTRADIUSMAX=${13}
-ResamplePoints=${14}
-numSamples=${15}
+material_model=${7}
+int_frict_angle=${8}
+pile_type=${9}
+orientation_angle=${10}
+initial_speed=${11}
+initial_direction=${12}
+minvol=${13}
+maxvol=${14}
+BEDMIN=${15}
+BEDMAX=${16}
+STARTUTMECEN=${17}
+STARTUTMNCEN=${18}
+STARTRADIUSMAX=${19}
+ResamplePoints=${20}
+numSamples=${21}
 
 #echo "workingdir: "$workingdir
 #echo "bindir: "$bindir
@@ -42,7 +34,13 @@ numSamples=${15}
 #echo $titan2dInputFile
 #echo $titan2dInputFiled
 #echo $titan2dInputFiledd
-#echo "minvol: "$minvol
+echo "material_model: "$material_model
+echo "int_frict_angle: "$int_frict_angle
+echo "pile_type: "$pile_type
+echo "orientation_angle: "$orientation_angle
+echo "initial_speed: "$initial_speed
+echo "initial_direction: "$initial_direction
+echo "minvol: "$minvol
 #echo "maxvol: "$maxvol
 #echo "BEDMIN: "$BEDMIN
 #echo "BEDMAX: "$BEDMAX
@@ -50,7 +48,7 @@ numSamples=${15}
 #echo "STARTUTMNCEN: "$STARTUTMNCEN
 #echo "STARTRADIUSMAX: "$STARTRADIUSMAX
 #echo "ResamplePoints: "$ResamplePoints
-#echo "numSamples: "$numSamples
+echo "numSamples: "$numSamples
 
 # Clean up submit generated files
 rm -rf grassdir*
@@ -160,12 +158,17 @@ fi
 filename=$workingdir/temp.py
 #echo $filename
 
-firstmaxiter=0
+first_model=0
+first_int_frict=0
+first_pile_type=0
+first_orientation=0
+first_Vmagnitude=0
+first_Vdirection=0
 
 while read data; do
 
    nextline=$data
-   echo $nextline
+   #echo $nextline
 
    # Trim leading white space for check.
    # ^[ \t]* : search pattern ( ^ - start of the line; 
@@ -241,10 +244,8 @@ while read data; do
       # Make required grass subdirectory
 
       mkdir -p $cpumapsetdir
-      # Hard set.
-      # Will change when code to download and create the grass directory is done
       thisline="   gis_main='./grassdata',"
-echo $thisline >> $filename
+      echo $thisline >> $filename
   
    elif [[ $trimmed == "gis_sub"* ]]
    then
@@ -419,24 +420,85 @@ echo $thisline >> $filename
          fi
          echo $nextline >> $filename
       fi
-
-   elif [[ $trimmed == "max_iter="* ]]
+      
+   elif [[ $trimmed == "model="* ]]
    then
 
-      if [[ $firstmaxiter == 0 ]]
+      if [[ $first_model == 0 ]]
       then
-         firstmaxiter=1
-         newline=$(echo $nextline | sed "s/max_iter=.*,/max_iter=10,/")
+         first_model=1
+         newline=$(echo $nextline | sed "s/model=.*,/model=$material_model,/")
+         #echo $newline
+         echo $newline >> $filename
+      else
+         echo $nextline >> $filename
+      fi
+   
+   elif [[ $trimmed == "int_frict="* ]]
+   then
+
+      if [[ $first_int_frict == 0 ]]
+      then
+         first_int_frict=1
+         newline=$(echo $nextline | sed "s/int_frict=.*,/int_frict=$int_frict_angle,/")
+         #echo $newline
+         echo $newline >> $filename
+      else
+         echo $nextline >> $filename
+      fi
+   
+   elif [[ $trimmed == "pile_type="* ]]
+   then
+
+      if [[ $first_pile_type == 0 ]]
+      then
+         first_pile_type=1
+         newline=$(echo $nextline | sed "s/pile_type=.*,/pile_type=$pile_type,/")
+         #echo $newline
+         echo $newline >> $filename
+      else
+         echo $nextline >> $filename
+      fi
+   
+   elif [[ $trimmed == "orientation="* ]]
+   then
+      if [[ $first_orientation == 0 ]]
+      then
+         first_orientation=1
+         newline=$(echo $nextline | sed "s/orientation=.*,/orientation=$orientation_angle,/")
          #echo $newline
          echo $newline >> $filename
       else
          echo $nextline >> $filename
       fi
 
+   elif [[ $trimmed == "Vmagnitude="* ]]
+   then
+      if [[ $first_Vmagnitude == 0 ]]
+      then
+         first_Vmagnitude=1
+         newline=$(echo $nextline | sed "s/Vmagnitude=.*,/Vmagnitude=$initial_speed,/")
+         #echo $newline
+         echo $newline >> $filename
+      else
+         echo $nextline >> $filename
+      fi
+
+   elif [[ $trimmed == "Vdirection="* ]]
+   then
+      if [[ $first_Vdirection == 0 ]]
+      then
+         first_Vdirection=1
+         newline=$(echo $nextline | sed "s/Vdirection=.*/Vdirection=$initial_direction/")
+         #echo $newline
+         echo $newline >> $filename
+      else
+         echo $nextline >> $filename
+      fi
    else
       echo $nextline >> $filename
    fi
-
+   
 done < $titan2dInputFile
 
 mv $filename $workingdir/simulation_init.py
@@ -451,7 +513,7 @@ echo "pwd: "$(pwd)
 octave=$(which octave)
 echo ${octave}
 
-echo 'runParams...'
+echo 'Create runParams.mat...'
 octave --no-window-system --no-gui --no-history --silent --eval \
     "cd $bindir; \
     runParams('$workingdir',$minvol,$maxvol,$BEDMIN,$BEDMAX,\

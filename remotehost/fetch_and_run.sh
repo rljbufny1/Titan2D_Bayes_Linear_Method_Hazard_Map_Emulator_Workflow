@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# https://github.com/awslabs/aws-batch-helpers/blob/master/fetch-and-run/fetch_and_run.sh
+
 # Copyright 2013-2017 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the

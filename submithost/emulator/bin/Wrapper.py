@@ -1,11 +1,15 @@
-##!/usr/bin/env python3
-
 #----------------------------------------------------------------------------------------------------------------------
 # Class: Wrapper
 # Component of: Titan2D Bayes Linear Method Hazard Map Emulator Workflow
 # Purpose: Run a Pegasus workflow
 # Author: Renette Jones-Ivey
-# Date: Dec 2023
+# Date: Sep 2024
+#
+# See ./doc/Phm_tut.pdf for function decriptions.
+#
+# Steps 1, 2, 5, 6, 8, 9, 10 and 15 (Local)
+# Steps 3, 4, 7, 11, 12, 13 and 14 (Pegasus)
+#
 #---------------------------------------------------------------------------------------------------------------------
 
 # References:
@@ -13,7 +17,8 @@
 # https://pegasus.isi.edu/documentation/python/Pegasus.api.html#module-Pegasus.api.workflow
 # https://pegasus.isi.edu/documentation/reference-guide/data-management.html
 
-# Note all output is directed to the dax file so cannot have any print statements except for if an exception occurs.
+#########################################################
+#########################################################
 
 import datetime
 import os
@@ -24,13 +29,8 @@ import sys
 
 #print (sys.path)
 
-#from Pegasus.DAX3 import *
-#/usr/lib64/python3.6/site-packages/Pegasus/DAX3.py:165: DeprecationWarning: Pegasus.DAX3 API has been deprecated and will be removed in v5.1.0. Please use the new API released in v5.0.0.
-  #DeprecationWarning,
-  
 from Pegasus.api import *
 
-#import ND_Kriging_Sinkhorn_Probabilities
 import DEM
 
 import logging
@@ -40,102 +40,71 @@ logging.basicConfig(level=logging.WARNING)
 # Called from ipynb
 class Wrapper():
     
-    #def __init__(self,\
-           #parent, self_workingdir, self_bindir, self_scriptsdir, grassgis_database, grassgis_location, grassgis_mapset, grassgis_map, \
-           #numsamples, simplexStart, numSimplices, numSimplicesPerProcessor, numSimplicesRemaining, phm_filenames, maxwalltime):
-    def __init__(self, self_workingdir, self_bindir, self_scriptsdir, self_datadir, self_examplesdir, eruptsimulations, maxwalltime):
+    def __init__(self, self_workingdir, self_bindir, self_scriptsdir, self_datadir, self_examplesdir, self_workflow_results_directory, num_simulations, maxwalltime):
 
         self.workingdir = self_workingdir
         self.bindir = self_bindir
         self.scriptsdir = self_scriptsdir
         self.datadir = self_datadir
         self.examplesdir = self_examplesdir
-        self.eruptsimulations = eruptsimulations
-        '''
-        self.simplexStart = simplexStart
-        self.numSimplices = numSimplices
-        self.numSimplicesPerProcessor = numSimplicesPerProcessor
-        self.numSimplicesRemaining = numSimplicesRemaining
-        self.phm_filenames = phm_filenames
-        '''
+        self.workflow_results_directory = self_workflow_results_directory
+        self.num_simulations = num_simulations
         self.maxwalltime = maxwalltime
     
-        print('self.workingdir: ', self.workingdir)
-        print('self.bindir: ', self.bindir)
-        print('self.scriptsdir: ', self.scriptsdir)
-        print('self.datadir: ', self.datadir)
-        print('self.examplesdir: ', self.examplesdir)
-        print('self.eruptsimulations: ', self.eruptsimulations)
-        '''
-        print('self.simplexStart: ', self.simplexStart)
-        print('self.numSimplices: ', self.numSimplices)
-        print('self.numSimplicesPerProcessor: ', self.numSimplicesPerProcessor)
-        print('self.numSimplicesRemaining: ', self.numSimplicesRemaining)
-        print('len(self.phm_filenames): ', len(self.phm_filenames))
-        #print('self.phm_filenames: ', str(self.phm_filenames))
-        '''
+        #print('self.workingdir: ', self.workingdir)
+        #print('self.bindir: ', self.bindir)
+        #print('self.scriptsdir: ', self.scriptsdir)
+        #print('self.datadir: ', self.datadir)
+        #print('self.examplesdir: ', self.examplesdir)
+        #print('self.workflow_results_directory: ', self.workflow_results_directory)
+        print('self.num_simulations: ', self.num_simulations)
         print('self.maxwalltime: ', self.maxwalltime)
         print('\n')
-        
-        #self.run()
         
     def initialize_workflow(self, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
         volcano_lat_utmn, volcano_lon_utme, \
         lat_south, lat_north, lon_west, lon_east, \
         grassgis_database, grassgis_location, grassgis_mapset, grassgis_map, \
-        eruptminvol, eruptmaxvol, eruptminbed, eruptmaxbed, eruptradius):
+        material_model, int_frict_angle, \
+        pile_type, orientation_angle, initial_speed, initial_direction, \
+        minvol, maxvol, minbed, maxbed, radius):
 
-        self.volcano_lat_decimal_degrees = volcano_lat_decimal_degrees
-        self.volcano_lon_decimal_degrees = volcano_lon_decimal_degrees
-        self.volcano_lat_utmn = volcano_lat_utmn
-        self.volcano_lon_utme = volcano_lon_utme
-        self.lat_south = lat_south
-        self.lat_north = lat_north
-        self.lon_west = lon_west
-        self.lon_east = lon_east
         self.grassgis_database = grassgis_database
-        self.grassgis_location = grassgis_location
-        self.grassgis_mapset = grassgis_mapset
-        self.grassgis_map = grassgis_map
-        self.eruptminvol = eruptminvol
-        self.eruptmaxvol = eruptmaxvol
-        self.eruptminbed = eruptminbed
-        self.eruptmaxbed = eruptmaxbed
-        self.eruptradius = eruptradius
         
-        print('self.volcano_lat_decimal_degrees: ', self.volcano_lat_decimal_degrees)
-        print('self.volcano_lon_decimal_degrees: ', self.volcano_lon_decimal_degrees)
-        print('self.volcano_lat_utmn: ', self.volcano_lat_utmn)
-        print('self.volcano_lon_utme: ', self.volcano_lon_utme)
-        print('self.lat_south: ', self.lat_south)
-        print('self.lat_north: ', self.lat_north)
-        print('self.lon_west: ', self.lon_west)
-        print('self.lon_east: ', self.lon_east)
+        print('volcano_lat_decimal_degrees: ', volcano_lat_decimal_degrees)
+        print('volcano_lon_decimal_degrees: ', volcano_lon_decimal_degrees)
+        print('volcano_lat_utmn: ', volcano_lat_utmn)
+        print('volcano_lon_utme: ', volcano_lon_utme)
+        print('lat_south: ', lat_south)
+        print('lat_north: ', lat_north)
+        print('lon_west: ', lon_west)
+        print('lon_east: ', lon_east)
         print('self.grassgis_database: ', self.grassgis_database)
-        print('self.grassgis_location ', self.grassgis_location)
-        print('self.grassgis_mapset: ', self.grassgis_mapset)
-        print('self.grassgis_map: ', self.grassgis_map)
-        print('self.eruptminvol: ', self.eruptminvol)
-        print('self.eruptmaxvol: ', self.eruptmaxvol)
-        print('self.eruptminbed: ', self.eruptminbed)
-        print('self.eruptmaxbed: ', self.eruptmaxbed)
-        print('self.eruptradius: ', self.eruptradius)
+        print('grassgis_location ', grassgis_location)
+        print('grassgis_mapset: ', grassgis_mapset)
+        print('grassgis_map: ', grassgis_map)
+        print('material_model: ', material_model)
+        print('int_frict_angle: ', int_frict_angle)
+        print('pile_type: ', pile_type)
+        print('orientation_angle: ', orientation_angle)
+        print('initial_speed: ', initial_speed)
+        print('initial_direction: ', initial_direction)
+        print('minvol: ', minvol)
+        print('maxvol: ', maxvol)
+        print('minbed: ', minbed)
+        print('maxbed: ', maxbed)
+        print('radius: ', radius)
 
-        global simplexStart
-        global numSimplices
-        global numSimplicesPerProcessor
-        global numSimplicesRemaining
-        global phm_filenames
-        
         try:
             # Create the GIS GRASS Database
-            print("\nCreating GIS GRASS Database...");
+            print("\nCreating the GIS GRASS Database...")
 
             #'''
-            DEM.get_DEM(self.workingdir, self.volcano_lat_decimal_degrees, self.volcano_lon_decimal_degrees, \
-                        self.lat_south, self.lat_north, self.lon_west, self.lon_east, \
-                        self.grassgis_database, self.grassgis_location, self.grassgis_mapset, self.grassgis_map)
+            DEM.get_DEM(self.workingdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
+                        lat_south, lat_north, lon_west, lon_east, \
+                        grassgis_database, grassgis_location, grassgis_mapset, grassgis_map)
             #'''
+            print("The GIS GRASS Database successfully created.")
 
             # get input value for input.string(titan2dInputFile).
             # Full pathname of the Titan2D input file
@@ -152,7 +121,7 @@ class Wrapper():
                 #sys.exit(0)
                 
             titan2d_simulation_input_file = os.path.join(self.examplesdir, "simulation.py")
-            print ('titan2d_simulation_input_file: ', titan2d_simulation_input_file)
+            #print ('titan2d_simulation_input_file: ', titan2d_simulation_input_file)
             
             if (os.path.exists(titan2d_simulation_input_file)):
                 FH2 = open(titan2d_simulation_input_file, 'r')
@@ -160,7 +129,7 @@ class Wrapper():
                 FH2.close()
                 #print (output)
             else:
-                print ('%s does not exist.' %titan2d_simulation_input_file)
+                print ('Initialize workflow %s does not exist.' %titan2d_simulation_input_file)
                 return False
                     
 
@@ -200,27 +169,23 @@ class Wrapper():
             if (os.path.exists(run_params_mat_filepath) == True):
                 os.remove(run_params_mat_filepath)
 
-            #setup_path = os.path.join(srcdir,"setup.sh")
-            #subprocess.call([setup_path,workingdir,srcdir,datadir,\
-                             #titan2dInputFile,titan2dInputFiled,titan2dInputFiledd,\
-                             #minvolStr,maxvolStr,BEDMINStr,BEDMAXStr,
-                             #STARTUTMECENStr,STARTUTMNCENStr,STARTRADIUSMAXStr,\
-                             #resamplePointsStr,numSamplesStr])
             setup_path = os.path.join(self.bindir,"setup.sh")
             resamplePointsStr = '1024'
             subprocess.call([setup_path,self.workingdir,self.bindir,self.datadir,\
                              titan2dInputFile,titan2dInputFiled,titan2dInputFiledd,\
-                             str(self.eruptminvol),str(self.eruptmaxvol),str(self.eruptminbed),str(self.eruptmaxbed),
-                             str(self.volcano_lon_utme),str(self.volcano_lat_utmn),str(self.eruptradius),\
-                             resamplePointsStr,str(self.eruptsimulations)])
+                             str(material_model), str(int_frict_angle), \
+                             str(pile_type), str(orientation_angle), str(initial_speed), str(initial_direction), \
+                             str(minvol),str(maxvol),str(minbed),str(maxbed),
+                             str(volcano_lon_utme),str(volcano_lat_utmn),str(radius),\
+                             resamplePointsStr,str(self.num_simulations)])
             
             # Verify
 
             if (os.path.exists(run_params_mat_filepath) == False):
                 #sys.stderr.write("%s not generated by setup processing\n" % run_params_mat_filename)
                 #sys.stderr.write("The gis_main path in the Titan2d input file is invalid or not resolved\n")
-                print("%s not generated by setup processing\n" % run_params_mat_filename)
-                print("The gis_main path in the Titan2d input file is invalid or not resolved\n")
+                print("Initialize workflow %s not generated by setup processing\n" % run_params_mat_filename)
+                print("Initialize workflow The gis_main path in the Titan2d input file is invalid or not resolved\n")
                 #io.put("output.string(runstate).about.label", value="Emulation error")
                 #Rappture.result(io)
                 #sys.exit(1)
@@ -228,10 +193,6 @@ class Wrapper():
             else:
                 print("\n%s successfully created\n" % run_params_mat_filename)
             
-            #########################################################
-            # Steps 1 and 2
-            #########################################################
-
             # Step 1 - Call Gen_Titan_Input_Samples.m
             #
             # Input(s): runParams.mat
@@ -248,13 +209,13 @@ class Wrapper():
                 os.remove(uncertain_input_list_h_filepath)
 
             step_1_path = os.path.join(self.bindir,"step_1.sh")
-            subprocess.call([step_1_path,self.bindir,self.workingdir,str(self.eruptsimulations)])
+            subprocess.call([step_1_path,self.bindir,self.workingdir,str(self.num_simulations)])
 
             # Verify
 
             if (os.path.exists(uncertain_input_list_filepath) == False):
                 #sys.stderr.write("%s not generated by step 1\n" % uncertain_input_list_filename)
-                print("%s not generated by step 1\n" % uncertain_input_list_filename)
+                print("Initialize workflow %s not generated by step 1\n" % uncertain_input_list_filename)
                 #io.put("output.string(runstate).about.label", value="Emulation error")
                 #Rappture.result(io)
                 #sys.exit(1)
@@ -262,20 +223,20 @@ class Wrapper():
 
             if (os.path.exists(uncertain_input_list_h_filepath) == False):
                 #sys.stderr.write("%s not generated by step 1\n" % uncertain_input_list_h_filename)
-                print("%s not generated by step 1\n" % uncertain_input_list_h_filename)
+                print("Initialize workflow %s not generated by step 1\n" % uncertain_input_list_h_filename)
                 #io.put("output.string(runstate).about.label", value="Emulation error")
                 #Rappture.result(io)
                 #sys.exit(1)
                 return False
 
-            # Step 2 - Create Titan2D input file for each of the samples
+            # Run step 2 - Create Titan2D input file for each of the samples
             #
             # Input(s): uncertain_input_list_h.txt
             # Output(s): simulation_<%06d sample number>.py
 
-            print("\nCreating Titan2D input files...");
+            print("Creating Titan2D input files...");
 
-            for i in range (1, self.eruptsimulations + 1):
+            for i in range (1, self.num_simulations + 1):
                 filename = "simulation_%06d.py" %i
                 filepath = os.path.join(self.workingdir,filename)
                 if (os.path.exists(filepath) == True):
@@ -283,15 +244,15 @@ class Wrapper():
 
             step_2_path = os.path.join(self.bindir,"step_2.sh")
             checkPercent = 10;
-            if (self.eruptsimulations > checkPercent):
+            if (self.num_simulations > checkPercent):
                 done = 0;
-                nextDoneIncrement = self.eruptsimulations/checkPercent;
+                nextDoneIncrement = self.num_simulations/checkPercent;
                 nextDoneCheck = done + nextDoneIncrement;
                 nextDonePercent = 0;
 
-            for i in range (1, self.eruptsimulations + 1):
+            for i in range (1, self.num_simulations + 1):
 
-                if (self.eruptsimulations > checkPercent):
+                if (self.num_simulations > checkPercent):
                     done = done + 1;
                     if (done > nextDoneCheck):
                         nextDoneCheck = done + nextDoneIncrement;
@@ -302,7 +263,7 @@ class Wrapper():
             # Verify
 
             filecheck = 0
-            for i in range (1, self.eruptsimulations + 1):
+            for i in range (1, self.num_simulations + 1):
                 filename = "simulation_%06d.py" %i
                 filepath = os.path.join(self.workingdir,filename)
                 if (os.path.exists(filepath) == True):
@@ -311,8 +272,8 @@ class Wrapper():
                     print ("file %s not found" % filepath)
 
             #print ("filecheck: %d" %filecheck)
-            if (filecheck != self.eruptsimulations):
-                print("One or more Titan2D input files were not created by step 2\n")
+            if (filecheck != self.num_simulations):
+                print("Initialize workflow One or more Titan2D input files were not created by step 2\n")
                 #sys.exit(1)
                 return False
             else:
@@ -320,17 +281,21 @@ class Wrapper():
                 
                 print("\nCreating emulator input files...");
                 
+                # Steps 5, 8, 9 and 10
                 # Create macro_emulator.pwem, macro_resamples.tmp, macro_resample_assemble.inputs,
                 # AZ_vol_dir_bed_int.phm and step11_12_13_staged_input.txt
-                
 
                 step_5_8_9_10_path = os.path.join(self.bindir,"step_5_8_9_10.sh")
                 subprocess.call([step_5_8_9_10_path,self.bindir,self.workingdir])
                 
+                # Step 6 - Call extract_mini_emulator_build_meta_data.m
+                #
+                # Input(s): macro_emulator.pwem
+                # Output(s): build_mini_pwem_meta.<%06d sample number>
                 step_6_path = os.path.join(self.bindir,"step_6.sh")
 
                 # Create build_mini_pwem_meta.<samplenumber - formatted as %06g> for each sample
-                for i in range (1, self.eruptsimulations + 1):
+                for i in range (1, self.num_simulations + 1):
                     subprocess.call([step_6_path,self.bindir,self.workingdir,str(i)])
 
                 # Create the list of phm files for Pegasus
@@ -364,23 +329,31 @@ class Wrapper():
                 # Use numSamples number of processors for this
 
                 numSimplicesTruncated = self.numSimplices-(self.simplexStart-1)
-                #log_info ("numSimplicesTruncated: %d " % numSimplicesTruncated)
+                print ("numSimplicesTruncated: %d " % numSimplicesTruncated)
                 
-                # //: divide with integral results (discard remainder)
-                # %: modulus
-                self.numSimplicesPerProcessor = numSimplicesTruncated//self.eruptsimulations
-                self.numSimplicesRemaining = numSimplicesTruncated%self.eruptsimulations
-
-
                 if (numSimplicesTruncated <= 0):
-                    sys.stderr.write("Steps 11-13: Not enough simplices to continue. Verify the number of erupt simulations.\n")
+                    sys.stderr.write("Initialize workflow Steps 11-13: Not enough simplices to continue. Verify the number of erupt simulations.\n")
                     sys.stdout.flush()
                     return False
 
-                #log_info ("self.numSimplicesPerProcessor: %d " % self.numSimplicesPerProcessor)
-                #log_info ("self.numSimplicesRemaining: %d " % self.numSimplicesRemaining)
-                #log_info ("len(self.phm_filenames): " + str(len(self.phm_filenames)))
-                #log_info ("phm_filenames: " + str(phm_filenames))
+
+                # //: divide with integral results (discard remainder)
+                # %: modulus
+                self.numSimplicesPerProcessor = numSimplicesTruncated//self.num_simulations
+                self.numSimplicesRemaining = numSimplicesTruncated%self.num_simulations
+
+
+                print ("self.simplexStart: %d " % self.simplexStart)
+                print ("self.numSimplices: %d " % self.numSimplices)
+                print ("self.numSimplicesPerProcessor: %d " % self.numSimplicesPerProcessor)
+                print ("self.numSimplicesRemaining: %d " % self.numSimplicesRemaining)
+                print ("len(self.phm_filenames): " + str(len(self.phm_filenames)))
+                count = 0
+                for i in range (len(self.phm_filenames)):
+                    if (self.phm_filenames[i] != "0"):
+                        count = count + 1
+                print ("self.phm_filenames count of nonzero files: %d" % count)
+                #print ("self.phm_filenames: " + str(self.phm_filenames))
                 
                 print("Emulator input files successfully created\n")
 
@@ -389,7 +362,7 @@ class Wrapper():
             
         except Exception as e:
             
-            print ('Wrapper.py inititialize_workflow Exception: %s\n' %str(e))
+            print ('Initialize workflow  Exception: %s\n' %str(e))
             return False
 
     def run_workflow(self):
@@ -406,12 +379,11 @@ class Wrapper():
             TOPDIR = os.getcwd()
             os.environ['TOPDIR'] = TOPDIR
             print("os.environ['TOPDIR']: ", os.environ['TOPDIR'])
-            # pegasus bin directory is needed to find titan-simpletitan2d
+            
             #BIN_DIR=`pegasus-config --bin`
             #echo "BIN_DIR: "$BIN_DIR
             #PEGASUS_LOCAL_BIN_DIR=${BIN_DIR}
             #export PEGASUS_LOCAL_BIN_DIR
-
             PEGASUS_LOCAL_BIN_DIR = '/usr/bin'
             os.environ['PEGASUS_LOCAL_BIN_DIR'] = PEGASUS_LOCAL_BIN_DIR
             print("os.environ['PEGASUS_LOCAL_BIN_DIR']: ", os.environ['PEGASUS_LOCAL_BIN_DIR'])
@@ -450,9 +422,9 @@ class Wrapper():
                 pfn=os.path.join(self.workingdir,'remotebin','titanLaunch.sh'),
                 is_stageable = True, #Stageable or installed
                 arch=Arch.X86_64,
-                os_type=OS.LINUX) \
-            .add_profiles(Namespace.PEGASUS, key="clusters_size", value=self.eruptsimulations) \
-            .add_profiles(Namespace.PEGASUS, key="clusters_num", value=self.eruptsimulations)
+                os_type=OS.LINUX)\
+            .add_profiles(Namespace.PEGASUS, key="clusters_size", value=self.num_simulations) \
+            .add_profiles(Namespace.PEGASUS, key="clusters_num", value=self.num_simulations)
             tc.add_transformations(titanlaunch)
             
             octavelaunch = Transformation(
@@ -461,21 +433,15 @@ class Wrapper():
                 pfn=os.path.join(self.workingdir,'remotebin','octaveLaunch.sh'),
                 is_stageable = True, #Stageable or installed
                 arch=Arch.X86_64,
-                os_type=OS.LINUX) \
-            .add_profiles(Namespace.PEGASUS, key="clusters_size", value=self.eruptsimulations) \
-            .add_profiles(Namespace.PEGASUS, key="clusters_num", value=self.eruptsimulations)
+                os_type=OS.LINUX)\
+            .add_profiles(Namespace.PEGASUS, key="clusters_size", value=self.num_simulations) \
+            .add_profiles(Namespace.PEGASUS, key="clusters_num", value=self.num_simulations)
             tc.add_transformations(octavelaunch)
 
             #########################################################
             #########################################################
 
             # PFNs:
-
-            #filename = "grassdir"
-            #filepath = os.path.join(self.workingdir,filename)
-            #grass_dir = File(filename)
-            #grass_dir.addPFN(PFN("file://" + filepath, "local"))
-            #dax.addFile(grass_dir)
 
             # All files in a Pegasus workflow are referred to in the DAX using their Logical File Name (LFN).
             # These LFNs are mapped to Physical File Names (PFNs) when Pegasus plans the workflow.
@@ -508,7 +474,7 @@ class Wrapper():
             rc.add_replica("local", File('AZ_vol_dir_bed_int.phm'), os.path.join(self.workingdir, 'AZ_vol_dir_bed_int.phm'))
             rc.add_replica("local", File('step11_12_13_staged_input.txt'), os.path.join(self.workingdir, 'step11_12_13_staged_input.txt'))
             
-            for i in range (1, self.eruptsimulations + 1):
+            for i in range (1, self.num_simulations + 1):
             
                 rc.add_replica("local", File('simulation_%06d.py' % i), os.path.join(self.workingdir, 'simulation_%06d.py' % i))
                 rc.add_replica("local", File('build_mini_pwem_meta.%06d' % i), os.path.join(self.workingdir, 'build_mini_pwem_meta.%06d' % i))
@@ -517,29 +483,33 @@ class Wrapper():
             
             step_4_jobs = []
             
-            for i in range (1, self.eruptsimulations + 1):
+            for i in range (1, self.num_simulations + 1):
                 
-                # Call titan
+                # Step 3 - Call titan
                 #
                 # Input(s): simulation.py for the sample
                 # Output(s): pileheightrecord.<%06d sample number>
             
-                # Pegasus returns for example, titan_ID0000001.stdout and  titan_ID0000001.stderr.
-                # Cannot specify to use Stdout.txt and Stderr.txt as output or errors will occur.
-                # Stdout and and Stdout info is contained in the titan_*.stdout files
-             
-                #.add_outputs(File('pileheightrecord.%06d' % i), stage_out=False)
+                # ***Note: not seeing stderr and stdout files for each workflow job in the submit directory.
+                # Tested with Batch authorized to use CloudWatch, see AWS Batch, Console Settings, Permissions.
+                # Users will need to track Titan2D failures due to user input parameters via these files.
                 titanjob  = Job(titanlaunch)\
-                    .add_args("""-nt 1 simulation_%06d.py""" %i)\
+                    .add_args("""-nt 1 simulation_%06d.py""" % i)\
                     .add_inputs(File(grassgis_database_zipped))\
                     .add_inputs(File('simulation_%06d.py' % i))\
-                    .add_checkpoint(File('pileheightrecord.%06d' % i), stage_out=True)\
+                    .add_outputs(File('pileheightrecord.%06d' % i), stage_out=False)\
                     .add_metadata(time="%d" %self.maxwalltime)
                 if i==1:
                     titanjob.add_outputs(File('elevation.grid'), stage_out=True)
                 
                 wf.add_jobs(titanjob)
                 
+                # Step 4 - Call down_sample_pileheightrecord.m
+                #
+                # Input(s): uncertain_input_list.txt, pileheightrecord.<%06d sample number>
+                # Output(s): down_sampled_data.<%06d sample number>
+                #
+
                 octavejob = Job(octavelaunch)\
                     .add_args("""r_down_sample_pileheightrecord.m %s %d""" % (".", i))\
                     .add_inputs(File('r_down_sample_pileheightrecord.m'))\
@@ -555,9 +525,14 @@ class Wrapper():
                 
                 step_4_jobs.append(octavejob)
                 
+            # Step 7 - Call build_mini_emulator.m
+            #
+            # Inputs(s): down_sampled_data.<%06d sample number> files, build_mini_pwem_meta.<%06d sample number>
+            # Output(s):  mini_emulator.<%06d sample number>
+
             step_7_jobs = []
             
-            for i in range (1, self.eruptsimulations + 1):
+            for i in range (1, self.num_simulations + 1):
             
                 octavejob = Job(octavelaunch)\
                     .add_args("""r_build_mini_emulator.m %s %d""" % (".", i))\
@@ -567,7 +542,7 @@ class Wrapper():
                     .add_outputs(File('mini_emulator.%06d' % i), stage_out=False)\
                     .add_metadata(time="%d" %self.maxwalltime)
                     
-                for j in range (1, self.eruptsimulations + 1):
+                for j in range (1, self.num_simulations + 1):
                     octavejob.add_inputs(File('down_sampled_data.%06d' % j))\
                     
                 wf.add_jobs(octavejob)
@@ -580,6 +555,13 @@ class Wrapper():
             i=self.simplexStart
             remaining = self.numSimplicesRemaining
 
+            # Steps 11-13 - Call script11_12_13.m
+            #
+            # Input(s): step11_12_13_staged_input.txt, macro_emulator.pwem,
+            #   macro_resample_assemble.inputs, AZ_vol_dir_bed_int.phm,
+            #   mini_emulator.<%06d sample number> files
+            # Output(s): phm_from_eval* files
+            
             step_11_12_13_jobs = []
             
             while (i < self.numSimplices):
@@ -604,7 +586,7 @@ class Wrapper():
                     .add_inputs(File('step11_12_13_staged_input.txt'))\
                     .add_metadata(time="%d" %self.maxwalltime)
                     
-                for j in range (1, self.eruptsimulations + 1):
+                for j in range (1, self.num_simulations + 1):
                     octavejob.add_inputs(File('mini_emulator.%06d' % j))\
 
                 for j in range (begin, end + 1):
@@ -621,7 +603,12 @@ class Wrapper():
                 step_11_12_13_jobs.append(octavejob)
                 
                 i=end+1
-                
+             
+            # Step 14 - Call script14.m
+            #
+            # Input(s): AZ_vol_dir_bed_int.phm, phm_from_eval* files
+            # Output(s): AZ_vol_dir_bed_int_final.phm
+    
             octavejob = Job(octavelaunch)\
                 .add_args("""r_script14.m %s""" % ("."))\
                 .add_inputs(File('r_script14.m'))\
@@ -659,72 +646,97 @@ class Wrapper():
             print ('prefix: ' + prefix)
 
             try:
-                
+
                 script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch.sh")
+                print ('Calling %s...' %script_path)
                 subprocess.call([script_path,self.workingdir,prefix])
 
-            except PegasusClientError as e:
-                print ('pegasus-aws-batch PegasusClientError Exception: %s\n' %str(e))
-                return False
-
-            #'''
-            try:
-                
+                print ('Planning the workflow...')
                 wf.plan(conf='./pegasusrc',\
                         cluster = ['horizontal'],\
                         sites = ['aws-batch'],\
                         output_sites = ['local'],\
                         dir = './dags',\
                         force = True,\
-                        submit = True)
-                        
+                        submit = False)
+
                 submit_dir = wf.braindump.submit_dir
                 print ('submit_dir: ' + str(submit_dir))
 
-                print ('Waiting for the workflow to complete...')
-                wf.wait()
-                        
-            except PegasusClientError as e:
-                print ('workflow.plan PegasusClientError Exception: %s\n' %str(e))
-                return False
-            #'''
-            
-            try:
+                if os.path.exists(submit_dir):
                 
-                script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.sh")
-                subprocess.call([script_path,self.workingdir,prefix])
-
-            except PegasusClientError as e:
-                print ('pegasus-aws-batch-delete PegasusClientError Exception: %s\n' %str(e))
-            
-            if os.path.exists(submit_dir):
-
-                try:
+                    if (1):
                     
+                        # Set merge_titanlaunch_PID1_ID1.sub log level to trace
+                    
+                        sub_filepath = os.path.join(submit_dir,'00','00','merge_titanlaunch_PID1_ID1.sub')
+                        #print ('sub_filepath: %s' %sub_filepath)
+                        tmp_filepath = os.path.join(self.workingdir, 'merge_titanlaunch_PID1_ID1.tmp')
+                        #print ('tmp_filepath: %s' %tmp_filepath)
+                        
+                        if os.path.exists(sub_filepath):
+                            #print("\n%s: \n" %sub_filepath)
+                            FH1 = open(sub_filepath,'r')
+                            FH2 = open(tmp_filepath,'w')
+                            for line in FH1:
+                                #print(line.rstrip())
+                                if '--log-level debug' in line:
+                                   FH2.write(line.replace('--log-level debug','--log-level trace'))
+                                else:
+                                   FH2.write(line)
+                            FH1.close()
+                            FH2.close()
+                        else:
+                            print ('%s does not exist' %sub_filepath)
+                        
+                        #if os.path.exists(tmp_filepath):
+                            #print("\n%s: \n" %tmp_filepath)
+                            #FH1 = open(tmp_filepath,'r')
+                            #for line in FH1:
+                                #print(line.rstrip())
+                            #FH1.close()
+                        #else:
+                            #print ('%s does not exist' %tmp_filepath)
+                            
+                        os.remove(sub_filepath)
+                        shutil.copy(tmp_filepath, sub_filepath)
+                        
+                    print ('Submitting the workflow to HTCondor...')
+                    wf.run()
+                    
+                    print ('wf.run_output: %s\n' %str(wf.run_output))
+                
+                    print ('Waiting for the workflow to complete...')
+                    wf.wait()
+                    
+                    # ***Note: Job queues are deleted.
+                    # Job definitions (need to deregister first?) and compute environments are not delected.
+                    script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.sh")
+                    print ('Calling %s...' %script_path)
+                    subprocess.call([script_path,self.workingdir,prefix])
+                        
                     script_path = os.path.join(self.scriptsdir,"pegasus-analyzer.sh")
-                    subprocess.call([script_path, self.workingdir, submit_dir])
-                    
-                except PegasusClientError as e:
-                    print ('pegasus-analyzer PegasusClientError Exception: %s\n' %str(e))
-                    
-                try:
+                    print ('Calling %s...' %script_path)
+                    subprocess.call([script_path, self.workflow_results_directory, submit_dir])
                     
                     script_path = os.path.join(self.scriptsdir,"pegasus-statistics.sh")
-                    subprocess.call([script_path, self.workingdir, submit_dir])
+                    print ('Calling %s...' %script_path)
+                    subprocess.call([script_path, self.workflow_results_directory, submit_dir])
+                        
+                    shutil.rmtree(submit_dir)
+                    return True
                     
-                except PegasusClientError as e:
-                    print ('pegasus-statistics PegasusClientError Exception: %s\n' %str(e))
-                    
-                shutil.rmtree(submit_dir)
-                return True
+                else:
+                      print ('Run workflow Error: submit directory %s not created' %submit_dir)
+                      return False
                 
-            else:
+            except PegasusClientError as e:
             
-                print ('Wrapper.py error: submit directory %s not created' %submit_dir)
+                print ('Run workflow PegasusClientError Exception: %s\n' %str(e))
                 return False
                 
         except Exception as e:
             
-            print ('Wrapper.py run_workflow Exception: %s\n' %str(e))
+            print ('Run workflow Exception: %s\n' %str(e))
             return False
  

@@ -11,18 +11,18 @@ def transform2deg(volcano_lat_decimal_degrees, volcano_lon_decimal_degrees):
     volcano_lon_utme, volcano_lat_utmn, utmzonen, utmzonel = deg2utm(
         volcano_lat_decimal_degrees, volcano_lon_decimal_degrees)
     
-    print('Latitude:' + str(volcano_lat_utmn) +  ' [UTMN]')
-    print('Longitude: ' + str(volcano_lon_utme) + ' [UMTE]')
-    print('utmzonen: %s' % utmzonen)
-    print('utmzonel: %s' % utmzonel)
+    #print('Latitude:' + str(volcano_lat_utmn) +  ' [UTMN]')
+    #print('Longitude: ' + str(volcano_lon_utme) + ' [UMTE]')
+    #print('utmzonen: %s' % utmzonen)
+    #print('utmzonel: %s' % utmzonel)
     utmzone = '%02d%c' % (utmzonen, utmzonel)
-    print('utmzone: %s' % utmzone)
+    #print('utmzone: %s' % utmzone)
     
     if np.sign(volcano_lat_decimal_degrees) == -1:
         utmzones = True
     else:
         utmzones = False
-    print('utmzones: %s' % utmzones)
+    #print('utmzones: %s' % utmzones)
     
     # To convert coordinates from UTM to decimal degrees
     

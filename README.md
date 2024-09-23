@@ -1,28 +1,27 @@
 # Titan2D Hazard Map Emulator Workflow
 
-This workflow tool produces Titan2D hazard maps that display the probability of a volcanic flow depth reaching a critical height following a premonitory event.
+This workflow tool produces [Titan2D](https://github.com/TITAN2D/titan2d) hazard maps that display the probability of a volcanic flow depth reaching a critical height following a premonitory event.
 
 Titan2D is a computer model for simulating granular avalanches over digital elevation models (DEMs) of natural terrian. The Titan2D hazard maps are constructed by creating a statistical surrogate model of the Titan2D computer model, requiring numerous executions of the Titan2D computer model. The Pegasus Workflow Management System (WMS) provides the structured platform for automating and managing these numerous executions, including staging the jobs, distributing the work, submitting the jobs to run in parallel, as well as handling data flow dependencies and overcoming job failures.
 
-This tool is designed to follow the Pegasus WMS Amazon Batch execution environment which in turn is based on the Amazon AWS Fetch & Run Procedure. See [Pegasus WMS Documentation](https://pegasus.isi.edu/documentation) for more information.
+This tool is designed to follow the Pegasus WMS Amazon Batch execution environment which in turn is based on the Amazon AWS Fetch & Run Procedure. See [Pegasus WMS Documentation](https://pegasus.isi.edu/documentation) for more information. 
 
 This tool runs two Docker containers, a submit host Docker container and a remote host Docker container. 
 
 The submit host Docker container's image contains software required to implement the Titan2D Hazard Map Emulator workflow including HTCondor and the Pegasus WMS.
 
-The remote host Docker container's image includes the bash fetch-and-run script and the fetch-and-run script ENTRYPOINT for pegasus-aws-batch.
+The remote host Docker container's image contains software to run Titan2D and includes the bash fetch-and-run script and the fetch-and-run script ENTRYPOINT for pegasus-aws-batch.
 
 ## Requirements:
 
-### Amazon AWS Configuration and Credential Files:
+See [Pegasus WMS Deployment Scenarios](https://pegasus.isi.edu/documentation/user-guide/deployment-scenarios.html), Amazon AWS Batch, for more information on the one time setup required for Pegasus AWS Batch.
+
+### Pegasus WMS requires Amazon AWS configuration and credential files for Pegasus AWS Batch:
 
 ~/.aws/conf<br />
 ~/.aws/credentials
 
-See [Amazon AWS Configuration and Credential File Setting](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html) for more information.
-
-
-## Pegasus WMS requires three credential files for Pegasus AWS Batch:
+### Pegasus WMS requires three credential files for Pegasus AWS Batch:
 
 .aws/conf:<br/>
 [default]<br/>
@@ -46,17 +45,15 @@ secret_key = *
 
 where * is replaced with your Amazon AWS credentials information.
 
-Notes: 
+### emulator.ipynb:
 
-See ./submithost/pegasus-wms-configuration-files/pegasusrc_template for a note on region usage for Pegasus WMS.
- 
-See ./submithost/pegasus-wms-configuration-files/compute-env.json for the Amazon AWS bid percentage used. Currently set to 20%.
+This Jupyter notebook provides the interface for running the Titan2D Hazard Map Emulator Workflow.
 
 ### pegasus-wms-configuration-scripts directory
  
-**Note: source configure.sh must be completed before building the submit host an remote host Docker images.**
+- **Note: source configure.sh must be completed before building the submit host and the remote host Docker images.**
 
-- Update creditionals template files in the submithost and remotehost directories.
+- Update creditionals template files in the remotehost and rsubmithost directories.
 
 	cd ./pegasus-wms-configuration_scripts<br>
 	source configure.sh<br>
@@ -69,7 +66,7 @@ See ./submithost/pegasus-wms-configuration-files/compute-env.json for the Amazon
 
 	cd ./remotehost<br>
 	docker image build -t remotehostimage . 2>&1 | tee build.log<br>
-	source ./build-and-push-docker-image-to-ECR.sh<br>
+	source ./push-docker-image-to-ECR.sh<br>
 
 ### submithost directory
 
@@ -79,10 +76,6 @@ See ./submithost/pegasus-wms-configuration-files/compute-env.json for the Amazon
 
 	cd ./submithost<br>
 	docker image build -t submithostimage . 2>&1 | tee build.log<br>
-	docker run --privileged --rm -p 9999:8888 submithostimage
+	docker run --privileged --rm -v $PWD/emulator/LOCAL/shared-storage:/home/submithost/emulator/LOCAL/shared-storage -p 9999:8888 submithostimage
 
-When the Sending DC_SET_READY message appears, open a web browser and enter the url localhost:9999/notebooks/emulator.ipynb and enter the password emulator.
-### emulator.ipynb:
-
-This Jupyter notebook provides the interface for running the Titan2D Hazard Map Emulator Workflow.
-
+When the Sending DC_SET_READY message appears, open a web browser and enter the url localhost:9999/apps/emulator.ipynb and enter the password emulator. This opens the emulator.ipynb Jupyter notebook in [Appmode](https://github.com/oschuett/appmode#). Results for running a workflow are written to the mounted ./submithost/emulator/LOCAL/shared-storage directory.

@@ -18,8 +18,8 @@ echo 'AMAZON_AWS_ACCESS_KEY_ID: '${AMAZON_AWS_ACCESS_KEY_ID}
 AMAZON_AWS_SECRET_ACCESS_KEY=$(awk -F ' = ' '{if (! ($0 ~ /^;/) && $0 ~ /aws_secret_access_key/) print $2}' ~/.aws/credentials)
 echo 'AMAZON_AWS_SECRET_ACCESS_KEY: '${AMAZON_AWS_SECRET_ACCESS_KEY}
 
-perl -i -pe"s~AMAZON_AWS_ACCOUNT_ID~${AMAZON_AWS_ACCOUNT_ID}~g" ../remotehost/build-and-push-docker-image-to-ECR.sh
-perl -i -pe"s~AMAZON_AWS_REGION~${AMAZON_AWS_REGION}~g" ../remotehost/build-and-push-docker-image-to-ECR.sh
+perl -i -pe"s~AMAZON_AWS_ACCOUNT_ID~${AMAZON_AWS_ACCOUNT_ID}~g" ../remotehost/push-docker-image-to-ECR.sh
+perl -i -pe"s~AMAZON_AWS_REGION~${AMAZON_AWS_REGION}~g" ../remotehost/push-docker-image-to-ECR.sh
 
 perl -i -pe"s~AMAZON_AWS_REGION~${AMAZON_AWS_REGION}~g" ../submithost/amazon-aws-credentials/.aws/config
 perl -i -pe"s~AMAZON_AWS_ACCESS_KEY_ID~${AMAZON_AWS_ACCESS_KEY_ID}~g" ../submithost/amazon-aws-credentials/.aws/credentials
