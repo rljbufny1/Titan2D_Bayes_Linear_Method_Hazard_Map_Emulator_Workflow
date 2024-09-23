@@ -26,24 +26,6 @@
 # build:
 #   # docker builder prune to remove cache first
 #   docker image build -t remotehostimage . 2>&1 | tee dockerbuild.log
-#
-# https://docs.docker.com/engine/reference/commandline/run/
-# --interactive,-i Keep STDIN open even if not attached
-# --tty,-t Allocate a pseudo-TTY
-# run:
-#   For module testing only:
-#       Uncomment out lines to add and chmod the module_test directory as USER root.
-#       Comment out line to set the ENTRYPOINT.
-#       save
-#       docker image build -t remotehostimage . 2>&1 | tee dockerbuild.log
-#       docker run --rm -it remotehostimage /bin/sh
-#       cd module_test
-#       source ./titanLanch.sh
-#       cat titan2d.stderr and titan2d.stdout and verify that the module test run of Titan2D completed successfully.
-#       exit
-#       Comment out lines to add and chmod the module_test directory as USER root.
-#       Uncomment out line to set the ENTRYPOINT.
-#       save
 
 # ====================================================================
 # System installations
@@ -174,12 +156,6 @@ ADD fetch_and_run.sh /usr/local/bin/fetch_and_run.sh
 
 USER root
 RUN ln -s /usr/bin/python2.7 /usr/bin/python
-
-# For module testing only:
-#    Uncomment out lines to add and chmod the module_test directory as USER root.
-#    Comment out line to set the ENTRYPOINT.
-#ADD ./module_test /tmp/module_test
-#RUN chmod 777 /tmp/module_test
 
 WORKDIR /tmp
 USER nobody
