@@ -1,20 +1,16 @@
 #!/bin/bash
 
-# Delete roles logged in as user with administrative access.
+echo "pegasus-aws-batch-delete.sh: "$@
 
 # Args:
 # $1 - workingdir
 # $2 - prefix
 
-echo "pegasus-aws-batch-delete.sh workingdir: "${1}" prefix: "${2}
-echo "PWD: "${PWD}
-
+# Note: job definitions can be deregistered but not deleted.
+# Deregistered job definitions are deleted after 180 days, see https://docs.aws.amazon.com/batch/latest/APIReference/API_DeregisterJobDefinition.html.
 pegasus-aws-batch \
     --conf ${1}/pegasusrc \
     --prefix ${2} \
     --delete \
-    --job-queue ${2}-job-queue \
-    --job-definition ${2}-job-definition \
-    --compute-environment ${2}-compute-env
- 
-
+    -q ${2}-job-queue \
+    --ce ${2}-compute-env

@@ -99,6 +99,8 @@ RUN dnf -y install --allowerasing --nobest \
 RUN python3 -m pip install --upgrade pip
 # argon2-cffi-bindings which jupyter requires has a requirements for setuptools_scm>=6.2
 RUN python3 -m pip install 'setuptools_scm>=6'
+# Verified on Oct 21, 2024, the default version of boto3 installed is version 7.8.4.
+RUN python3 -m pip install boto3
 RUN python3 -m pip install cartopy
 RUN python3 -m pip install cryptography
 RUN python3 -m pip install colorcet
@@ -108,7 +110,7 @@ RUN python3 -m pip install elevation
 RUN python3 -m pip install GDAL==3.0.4
 RUN python3 -m pip install geopandas
 RUN python3 -m pip install hublib
-# Reverified on Sept 12, 2024, the default version of ipywidgets installed is version 7.8.4.
+# Verified on Sept 12, 2024, the default version of ipywidgets installed is version 7.8.4.
 # With this version, the Output widget is not working.
 RUN python3 -m pip install ipywidgets==7.0.0
 RUN python3 -m pip install jupyter
@@ -163,8 +165,10 @@ ADD ./pegasus-wms-setup-files/config/10-dynamic-slots /etc/condor/config.d/10-dy
 # Pegasus -- rebuild everything below here
 #            http://dev.im-bot.com/docker-select-caching/
 ARG CACHEBUST=1
-ARG PEGASUS_VERSION=5.0.5
+ARG PEGASUS_VERSION=5.0.9dev
 RUN dnf -y install https://download.pegasus.isi.edu/pegasus/$PEGASUS_VERSION/pegasus-$PEGASUS_VERSION-1.el8.x86_64.rpm
+# -f, --full, returns internal build metrics including the version. UTC time stamp, in ISO 8601 format, is appended to the version.
+RUN pegasus-version -f
 
 # ====================================================================
 # Octave installation
@@ -180,8 +184,11 @@ RUN dnf -y install --allowerasing --nobest \
      octave \
      octave-devel
 
+
 # For the Docker build, cd ~ > /root
-ADD ./amazon-aws-credentials/.aws /root/.aws
+# ./aws/config users' account ID is not needed.
+# ./aws/config should not have any region specified.
+ADD ./amazon-aws-credentials/.aws/credentials /root/.aws/credentials
 ADD ./amazon-aws-credentials/.pegasus /root/.pegasus
 
 ADD ./emulator /home/submithost/emulator
@@ -189,20 +196,30 @@ RUN chown -R submithost:submithost-group /home/submithost/emulator
 RUN chmod 555 /home/submithost/emulator/remotebin/titanLaunch.sh
 RUN chmod 555 /home/submithost/emulator/remotebin/octaveLaunch.sh
 
-ADD ./pegasus-wms-configuration-files/pegasusrc_template /home/submithost/emulator/pegasusrc_template
-ADD ./pegasus-wms-scripts /home/submithost/emulator/pegasus-wms-scripts
+ADD ./emulator/pegasusrc /home/submithost/emulator/pegasusrc
+# Create pegasusrc_template from the pegasusrc configured with ./pegasus-wms-configure.sh,
+# pegasusrc is updated with a new prefix for each workflow run.
+ADD ./emulator/pegasusrc /home/submithost/emulator/pegasusrc_template
 
-RUN mkdir /home/submithost/emulator/conf
-ADD ./pegasus-wms-configuration-files/compute-env.json /home/submithost/emulator/conf/compute-env.json
-ADD ./pegasus-wms-configuration-files/job-definition.json /home/submithost/emulator/conf/job-definition.json
-ADD ./pegasus-wms-configuration-files/job-queue.json /home/submithost/emulator/conf/job-queue.json
-ADD ./pegasus-wms-configuration-files/sites.xml /home/submithost/emulator/conf/sites.xml
+ADD ./pegasus-wms-scripts /home/submithost/emulator/pegasus-wms-scripts
 
 #RUN echo -e "condor_master > /dev/null 2>&1" >> /home/submithost/.bashrc
 
 # User setup
 RUN echo -e "submithost ALL=(ALL)       NOPASSWD:ALL\n" >> /etc/sudoers
 USER submithost
+
+RUN mkdir /home/submithost/emulator/conf
+ADD ./pegasus-wms-configuration-files/compute-env.json /home/submithost/emulator/conf/compute-env.json
+# Add compute_env_json_template,
+# compute-env.json can be updated with user selected parameters for each workflow run.
+ADD ./pegasus-wms-configuration-files/compute_env_json_template /home/submithost/emulator/conf/compute_env_json_template
+ADD ./pegasus-wms-configuration-files/job-definition.json /home/submithost/emulator/conf/job-definition.json
+# Create job_definition_json_template from the job-definition.json configured with ./pegasus-wms-configure.sh,
+# job-definition.json can be updated with a user selected parameter for each workflow run.
+ADD ./pegasus-wms-configuration-files/job-definition.json /home/submithost/emulator/conf/job_definition_json_template
+ADD ./pegasus-wms-configuration-files/job-queue.json /home/submithost/emulator/conf/job-queue.json
+ADD ./pegasus-wms-configuration-files/sites.xml /home/submithost/emulator/conf/sites.xml
 
 WORKDIR /home/submithost
 
@@ -212,10 +229,13 @@ RUN mkdir /home/submithost/.pegasus \
     && chmod u+x /home/submithost/.pegasus/service.py
 
 USER root
+
+# Required for boto3
 ADD ./amazon-aws-credentials/.aws /home/submithost/.aws
 RUN chown -R submithost:submithost-group /home/submithost/.aws
 ADD ./amazon-aws-credentials/.pegasus/credentials.conf /home/submithost/.pegasus/credentials.conf
 RUN chown -R submithost:submithost-group /home/submithost/.pegasus/credentials.conf
+RUN chmod 600 /home/submithost/.pegasus/credentials.conf
 
 USER submithost
 

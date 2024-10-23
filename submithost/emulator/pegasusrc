@@ -28,7 +28,6 @@ pegasus.register False
 # "LocationConstraint": null
 #}
 # causing Pegasus to get an error
-# Using us-east-2
 pegasus.aws.region=AMAZON_AWS_REGION
 
 # your AWS account id ( in digits)

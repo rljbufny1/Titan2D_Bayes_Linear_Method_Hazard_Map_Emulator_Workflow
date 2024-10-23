@@ -15,7 +15,7 @@
       "exit $AWS_BATCH_JOB_ATTEMPT"
     ],
     "volumes": [],
-    "memory": 600,
+    "memory": AMAZON_AWS_JOB_DEFINITION_MEMORY,
     "ulimits": []
   },
   "retryStrategy": {

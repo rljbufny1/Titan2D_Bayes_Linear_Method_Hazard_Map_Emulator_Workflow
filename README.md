@@ -1,81 +1,77 @@
 # Titan2D Hazard Map Emulator Workflow
 
-This workflow tool produces [Titan2D](https://github.com/TITAN2D/titan2d) hazard maps that display the probability of a volcanic flow depth reaching a critical height following a premonitory event.
+This workflow tool produces [Titan2D](https://github.com/TITAN2D/titan2d) hazard maps that display the probability of a volcanic flow depth reaching a critical height following a premonitory volcanic eruption event.
 
-Titan2D is a computer model for simulating granular avalanches over digital elevation models (DEMs) of natural terrian. The Titan2D hazard maps are constructed by creating a statistical surrogate model of the Titan2D computer model, requiring numerous executions of the Titan2D computer model. The Pegasus Workflow Management System (WMS) provides the structured platform for automating and managing these numerous executions, including staging the jobs, distributing the work, submitting the jobs to run in parallel, as well as handling data flow dependencies and overcoming job failures.
+Titan2D is a computer model for simulating granular avalanches over digital elevation models (DEMs) of natural terrain. The Titan2D hazard maps are constructed by creating a statistical surrogate model of the Titan2D computer model, requiring numerous executions of the Titan2D computer model and the emulator's uncertainty quantification (UQ) software. See [Workflows for Construction of Spatio-Temporal Probabilistic Maps for Volcanic Hazard Assessment](https://www.frontiersin.org/journals/earth-science/articles/10.3389/feart.2021.744655) for more information.
 
-This tool is designed to follow the Pegasus WMS Amazon Batch execution environment which in turn is based on the Amazon AWS Fetch & Run Procedure. See [Pegasus WMS Documentation](https://pegasus.isi.edu/documentation) for more information. 
+The [Pegasus Workflow Management System (WMS)](https://pegasus.isi.edu) provides the structured platform for automating and managing these numerous executions, including staging the jobs, distributing the work, submitting the jobs to run in parallel, as well as handling data flow dependencies and overcoming job failures. This tool is designed to follow the Pegasus WMS, Amazon AWS Batch Deployment Scenario, which, in turn, is based on the AWS Fetch & Run Procedure. See [Welcome to Pegasus WMS’s documentation!](https://pegasus.isi.edu/documentation) and [Creating a Simple "Fetch & Run" AWS Batch Job](https://aws.amazon.com/blogs/compute/creating-a-simple-fetch-and-run-aws-batch-job/) for more information. 
 
-This tool runs two Docker containers, a submit host Docker container and a remote host Docker container. 
+This tool runs two Docker containers, a remotehostimage Docker container and a submithostimage Docker container. The Fetch & Run Docker image, remotehostimage, contains software to run Titan2D and the emulator's UQ software, and, also includes the Bash Fetch & Run script and ENTRYPOINT. The submithostimage Docker image contains the software required to implement the workflow, including a Jupyter Notebook as the interface for running the workflow, HTCondor, and the Pegasus WMS.
 
-The submit host Docker container's image contains software required to implement the Titan2D Hazard Map Emulator workflow including HTCondor and the Pegasus WMS.
+## Configure the Tool
 
-The remote host Docker container's image contains software to run Titan2D and includes the bash fetch-and-run script and the fetch-and-run script ENTRYPOINT for pegasus-aws-batch.
+This tool requires that you complete the prerequisites for configuring AWS Batch, which include creating an IAM user account with administrative access, creating required IAM roles and key pairs, and creating a Virtual Private Cloud (VPC) and security group.  See [Complete the AWS Batch prerequisites](https://docs.aws.amazon.com/batch/latest/userguide/get-set-up-for-aws-batch.html) for information on how to do this.
 
-## Requirements:
+Specific IAM roles required for the AWS Fetch & Run Procedure are an AWS BATCH Service Role named AWSBatchServiceRole, an Elastic Container Service (ECS) Instance Role named ecsInstanceRole, and an IAM Role named batchJobRole. See the Pegasus WMS 
+[Deployment Scenarios](https://pegasus.isi.edu/documentation/user-guide/deployment-scenarios.html), AWS Batch documentation, for more information.
 
-See [Pegasus WMS Deployment Scenarios](https://pegasus.isi.edu/documentation/user-guide/deployment-scenarios.html), Amazon AWS Batch, for more information on the one time setup required for Pegasus AWS Batch.
+AWS Batch comprises four components for a workflow: a compute environment, a job definition, a job queue, and the jobs. The Pegasus WMS provides an interface for creating and managing these AWS Batch components. To do this, Pegasus requires an AWS credential file, an AWS S3 configuration file, and JSON-formatted information catalogs. These files contain fields that reference your defined AWS Batch configurations. See the Pegasus WMS [Deployment Scenarios](https://pegasus.isi.edu/documentation/user-guide/deployment-scenarios.html), AWS Batch documentation, for more information.
 
-### Pegasus WMS requires Amazon AWS configuration and credential files for Pegasus AWS Batch:
+### Configuration Requirements
 
-~/.aws/conf<br />
-~/.aws/credentials
+This tool requires that you have the Amazon AWS CLI installed on your personal computer. See [Getting started with the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html) for more information.
 
-### Pegasus WMS requires three credential files for Pegasus AWS Batch:
+This tool also requires two AWS authorization credentials files: ~/.aws/config and ~/.aws/credentials. 
 
-.aws/conf:<br/>
+- Required contents of the ~/.aws/config file:<br/>
 [default]<br/>
-region = us-east-2
+account_id = *<br />
+region = *
 
-.aws/credentials:<br/>
+- Required contents of the ~/.aws/credentials file:<br/>
 [default]<br/>
-aws_access_key_id = *<br/>
+aws_access_key_id = *<br />
 aws_secret_access_key = *
 
-.pegasus/credentials.conf:<br/>
-[amazon]<br/>
-endpoint = https://s3.amazonaws.com<br/>
-#Max object size in MB<br/>
-max_object_size = 1024<br/>
-multipart_uploads = True<br/>
-ranged_downloads = True<br/>
-[user@amazon]<br/>
-access_key = *<br/>
-secret_key = *
+	Where * is replaced with your AWS authorization credentials.
 
-where * is replaced with your Amazon AWS credentials information.
+### Configuration Command
+	
+This tool's ./remosthost and ./submithost directories contain templates for the files that Pegasus requires. The ./pegasus-wms-configure.sh Bash script configures these files with your AWS authorization credentials.
 
-### emulator.ipynb:
+**Note: source ./pegasus-wms-configure.sh must be executed before building the remotehostimage and submithostimage Docker images.**
 
-This Jupyter notebook provides the interface for running the Titan2D Hazard Map Emulator Workflow.
+- source ./pegasus-wms-configure.sh<br>
 
-### pegasus-wms-configuration-scripts directory
+## Build the Docker Images
+
+### Build the remotehostimage Docker image and push the image to the Amazon Elastic Cloud Registry (ECR).
+
+- Create an Amazon AWS Elastic Container Repository (ECR) for your Amazon AWS Region. See [Creating an Amazon ECR private repository to store images](https://docs.aws.amazon.com/AmazonECR/latest/userguide/repository-create.html) for information on how to do this. Name the repository: remotehostimage.
+- cd ./remotehost<br>
+- docker image build -t remotehostimage . 2>&1 | tee build.log<br>
+- source ./push-remotehostimage-to-ECR.sh<br>
+
+### Build and run the submithostimage Docker image
+
+
+- cd ./submithost<br>
+- docker image build -t submithostimage . 2>&1 | tee build.log<br>
+ - docker run --privileged --rm -v $PWD/emulator/LOCAL/shared-storage:/home/submithost/emulator/LOCAL/shared-storage -p 9999:8888 submithostimage
+
+## Run the Workflow
+
+- When the docker run Sending DC_SET_READY message appears, open a web browser and enter the URL localhost:9999/apps/emulator.ipynb and enter the password emulator. This opens the emulator.ipynb Jupyter notebook in [Appmode](https://github.com/oschuett/appmode#). To open the emulator.ipynb Jupyter notebook in Edit Mode, enter the URL localhost:9999/notebooks/emulator.ipynb.
  
-- **Note: source configure.sh must be completed before building the submit host and the remote host Docker images.**
+- The emulator.ipynb Jupyter Notebook provides the interface for running the workflow. Follow steps in emulator.ipynb to set up and run the workflow. 
 
-- Update creditionals template files in the remotehost and rsubmithost directories.
+- Setup includes volcano selection, material model and pile parameters for the volcano's eruption, parameters for the emulator's UQ software, VPC selection, as well as running a script that further configures the JSON-formatted information catalogs that Pegasus requires with your selected parameters.
 
-	cd ./pegasus-wms-configuration_scripts<br>
-	source configure.sh<br>
+- Logout of the emulator.ipynb Jupyter Notebook and enter Ctrl+C to stop the running Docker container.
 
-### remotehost directory
+## View Workflow Results
 
-- Create an Amazon AWS Elastic Container repository for the remote host Docker image.
-- Build the remote host Docker image.
-- Upload the remote host Docker image to the created repository.
+- Results and interim files generated for running a workflow are written to the mounted ./submithost/emulator/LOCAL/shared-storage directory.
 
-	cd ./remotehost<br>
-	docker image build -t remotehostimage . 2>&1 | tee build.log<br>
-	source ./push-docker-image-to-ECR.sh<br>
+- Results include the Hazard_Report.pdf file, which contains information on the probability of a volcanic flow depth reaching a critical height at specific locations. 
 
-### submithost directory
-
-- Build the submit host Docker image.
-- Run the submit host Docker Image.
-- Open the submit host Docker image's Jupyter notebook emulator.ipynb.
-
-	cd ./submithost<br>
-	docker image build -t submithostimage . 2>&1 | tee build.log<br>
-	docker run --privileged --rm -v $PWD/emulator/LOCAL/shared-storage:/home/submithost/emulator/LOCAL/shared-storage -p 9999:8888 submithostimage
-
-When the Sending DC_SET_READY message appears, open a web browser and enter the url localhost:9999/apps/emulator.ipynb and enter the password emulator. This opens the emulator.ipynb Jupyter notebook in [Appmode](https://github.com/oschuett/appmode#). Results for running a workflow are written to the mounted ./submithost/emulator/LOCAL/shared-storage directory.

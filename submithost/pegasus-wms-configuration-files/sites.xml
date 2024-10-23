@@ -13,8 +13,8 @@
     <profile namespace="pegasus" key="clusters.num">1</profile>
   </site>
   <site handle="aws-batch" arch="x86_64" os="LINUX">
-    <directory path="${S3_BUCKET}" type="shared-scratch" free-size="" total-size="">
-      <file-server operation="all" url="${S3_URL_PREFIX}/${S3_BUCKET}">
+    <directory path="${S3_BUCKET}/${S3_BUCKET_KEY}" type="shared-scratch" free-size="" total-size="">
+      <file-server operation="all" url="${S3_URL_PREFIX}/${S3_BUCKET}/${S3_BUCKET_KEY}">
                 </file-server>
     </directory>
     <profile namespace="pegasus" key="clusters.num">1</profile>

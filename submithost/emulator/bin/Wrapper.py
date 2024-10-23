@@ -26,8 +26,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-
-#print (sys.path)
+import uuid
 
 from Pegasus.api import *
 
@@ -50,7 +49,8 @@ class Wrapper():
         self.workflow_results_directory = self_workflow_results_directory
         self.num_simulations = num_simulations
         self.maxwalltime = maxwalltime
-    
+        
+        '''
         #print('self.workingdir: ', self.workingdir)
         #print('self.bindir: ', self.bindir)
         #print('self.scriptsdir: ', self.scriptsdir)
@@ -60,6 +60,7 @@ class Wrapper():
         print('self.num_simulations: ', self.num_simulations)
         print('self.maxwalltime: ', self.maxwalltime)
         print('\n')
+        '''
         
     def initialize_workflow(self, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
         volcano_lat_utmn, volcano_lon_utme, \
@@ -67,10 +68,12 @@ class Wrapper():
         grassgis_database, grassgis_location, grassgis_mapset, grassgis_map, \
         material_model, int_frict_angle, \
         pile_type, orientation_angle, initial_speed, initial_direction, \
-        minvol, maxvol, minbed, maxbed, radius):
+        minvol, maxvol, minbed, maxbed, radius,
+        memory, subnet, security_group):
 
         self.grassgis_database = grassgis_database
         
+        '''
         print('volcano_lat_decimal_degrees: ', volcano_lat_decimal_degrees)
         print('volcano_lon_decimal_degrees: ', volcano_lon_decimal_degrees)
         print('volcano_lat_utmn: ', volcano_lat_utmn)
@@ -93,11 +96,15 @@ class Wrapper():
         print('maxvol: ', maxvol)
         print('minbed: ', minbed)
         print('maxbed: ', maxbed)
-        print('radius: ', radius)
-
+        print('memory: ', memory)
+        print('subnet: ', subnet)
+        print('security_group: ', security_group)
+        print ('\n')
+        '''
+        
         try:
             # Create the GIS GRASS Database
-            print("\nCreating the GIS GRASS Database...")
+            print("Creating the GIS GRASS Database...")
 
             #'''
             DEM.get_DEM(self.workingdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
@@ -234,7 +241,7 @@ class Wrapper():
             # Input(s): uncertain_input_list_h.txt
             # Output(s): simulation_<%06d sample number>.py
 
-            print("Creating Titan2D input files...");
+            print("Creating the Titan2D input files...");
 
             for i in range (1, self.num_simulations + 1):
                 filename = "simulation_%06d.py" %i
@@ -279,7 +286,7 @@ class Wrapper():
             else:
                 print("Titan2D input files successfully created\n")
                 
-                print("\nCreating emulator input files...");
+                print("\nCreating the emulator input files...");
                 
                 # Steps 5, 8, 9 and 10
                 # Create macro_emulator.pwem, macro_resamples.tmp, macro_resample_assemble.inputs,
@@ -342,20 +349,24 @@ class Wrapper():
                 self.numSimplicesPerProcessor = numSimplicesTruncated//self.num_simulations
                 self.numSimplicesRemaining = numSimplicesTruncated%self.num_simulations
 
-
                 print ("self.simplexStart: %d " % self.simplexStart)
                 print ("self.numSimplices: %d " % self.numSimplices)
-                print ("self.numSimplicesPerProcessor: %d " % self.numSimplicesPerProcessor)
-                print ("self.numSimplicesRemaining: %d " % self.numSimplicesRemaining)
-                print ("len(self.phm_filenames): " + str(len(self.phm_filenames)))
+                #print ("self.numSimplicesPerProcessor: %d " % self.numSimplicesPerProcessor)
+                #print ("self.numSimplicesRemaining: %d " % self.numSimplicesRemaining)
+                #print ("len(self.phm_filenames): " + str(len(self.phm_filenames)))
+                #print ("self.phm_filenames: " + str(self.phm_filenames))
                 count = 0
                 for i in range (len(self.phm_filenames)):
                     if (self.phm_filenames[i] != "0"):
                         count = count + 1
                 print ("self.phm_filenames count of nonzero files: %d" % count)
-                #print ("self.phm_filenames: " + str(self.phm_filenames))
                 
                 print("Emulator input files successfully created\n")
+
+                # Update pegasus aws batch configuration files based on user selected parameters.
+                script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-configure.sh")
+                print ('Calling %s...' %script_path)
+                subprocess.call([script_path, str(memory), subnet, security_group])
 
                 sys.stdout.flush()
                 return True
@@ -365,16 +376,22 @@ class Wrapper():
             print ('Initialize workflow  Exception: %s\n' %str(e))
             return False
 
-    def run_workflow(self):
+    def run_workflow(self, aws_region, aws_iam_username):
 
         try:
 
-            #print ('Path(".").resolve(): ',  Path(".").resolve())
-
+            '''
+            print('aws_region: ', aws_region)
+            print('iam_username: ', aws_iam_username)
+            '''
+            
             #########################################################
-            # Environment variables
+            # Create environment variables
             #########################################################
 
+            # Create the TOPDIR, PEGASUS_LOCAL_BIN_DIR, S3_URL_PREFIX, S3_BUCKET, and S3_BUCKET_KEY
+            # environment variables for ./conf/sites.xml.
+            
             print ('os.getcwd: ', os.getcwd())
             TOPDIR = os.getcwd()
             os.environ['TOPDIR'] = TOPDIR
@@ -391,24 +408,27 @@ class Wrapper():
             S3_URL_PREFIX = 's3://user@amazon'
             os.environ['S3_URL_PREFIX'] = S3_URL_PREFIX
             print("os.environ['S3_URL_PREFIX']: ", os.environ['S3_URL_PREFIX'])
-                  
-            #s3_bucket = os.environ['S3_BUCKET']
-            #print ('s3_bucket: ', s3_bucket)
-            S3_BUCKET='titan2d-workdir-bucket/titan2d-workdir'
+            
+            # ./pegasusrc sets pegasus.catalog.site.file=./conf/sites.xml.
+            # ./conf/sites.xml aws-batch site's file server definition sets url to "${S3_URL_PREFIX}/${S3_BUCKET}/${S3_BUCKET_KEY}"
+            # The globally unique S3_BUCKET is created by Pegasus (if it does not already exist), for the current user and Amazon AWS Region.
+            # The S3_BUCKET_KEY (i.e. directory) is created for each workflow run.
+            # The S3_BUCKET_KEY is deleted after each workflow run.
+            S3_BUCKET = 'titan2d-blm-emulator-%s-%s' %(aws_region, aws_iam_username)
+            #print ('S3_BUCKET: ', S3_BUCKET)
             os.environ['S3_BUCKET'] = S3_BUCKET
             print("os.environ['S3_BUCKET']: ", os.environ['S3_BUCKET'])
-
-            # ./pegasusrc sets pegasus.catalog.site.file=./conf/sites.xml.
-            # sites.xml aws-batch file server definition sets url to "${S3_URL_PREFIX}/${S3_BUCKET}"
-            # url = os.environ['S3_URL_PREFIX'] + '/' +  os.environ['S3_BUCKET']
-            # print ("url: %s" %url)
+            S3_BUCKET_KEY = 'pegasus-workflow'
+            #print ('S3_BUCKET_KEY: ', S3_BUCKET_KEY)
+            os.environ['S3_BUCKET_KEY'] = S3_BUCKET_KEY
+            print("os.environ['S3_BUCKET_KEY']: ", os.environ['S3_BUCKET_KEY'])
     
             #########################################################
             # Path to the titan and octave launch scripts
             #########################################################
 
             # Create the Pegasus workflow
-            wf = Workflow('titanworkflow')
+            wf = Workflow('emulatorworkflow')
             tc = TransformationCatalog()
             wf.add_transformation_catalog(tc)
             rc = ReplicaCatalog()
@@ -490,14 +510,13 @@ class Wrapper():
                 # Input(s): simulation.py for the sample
                 # Output(s): pileheightrecord.<%06d sample number>
             
-                # ***Note: not seeing stderr and stdout files for each workflow job in the submit directory.
-                # Tested with Batch authorized to use CloudWatch, see AWS Batch, Console Settings, Permissions.
-                # Users will need to track Titan2D failures due to user input parameters via these files.
                 titanjob  = Job(titanlaunch)\
                     .add_args("""-nt 1 simulation_%06d.py""" % i)\
                     .add_inputs(File(grassgis_database_zipped))\
                     .add_inputs(File('simulation_%06d.py' % i))\
                     .add_outputs(File('pileheightrecord.%06d' % i), stage_out=False)\
+                    .set_stdout(File('titan2d_%06d.stdout' % i), stage_out=True)\
+                    .set_stderr(File('titan2d_%06d.stderr' % i), stage_out=True)\
                     .add_metadata(time="%d" %self.maxwalltime)
                 if i==1:
                     titanjob.add_outputs(File('elevation.grid'), stage_out=True)
@@ -564,6 +583,7 @@ class Wrapper():
             
             step_11_12_13_jobs = []
             
+            count = 0
             while (i < self.numSimplices):
 
                 begin=i
@@ -595,6 +615,7 @@ class Wrapper():
                         phm_filename = self.phm_filenames[j-1]
                         octavejob.add_outputs(File(phm_filename), stage_out=False)
 
+                count = count + 1
                 wf.add_jobs(octavejob)
                 
                 # Needs all step 7 jobs to be complete
@@ -604,6 +625,8 @@ class Wrapper():
                 
                 i=end+1
              
+            print ("Number of r_script11_12_13.m jobs added: %d" % count)
+            
             # Step 14 - Call script14.m
             #
             # Input(s): AZ_vol_dir_bed_int.phm, phm_from_eval* files
@@ -633,13 +656,9 @@ class Wrapper():
             # Create the DAX file
             try:
                 wf.write()
-                wf.graph(include_files=True, label='xform-id', output='graph.png')
+                wf.graph(include_files=True, label='xform-id', output=os.path.join(self.workflow_results_directory, 'graph.png'))
             except PegasusClientError as e:
                 print(e)
-
-            # view rendered workflow
-            from IPython.display import Image
-            Image(filename='graph.png')
 
             utcnow = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
             prefix = 'remotehost-' + utcnow
@@ -647,88 +666,72 @@ class Wrapper():
 
             try:
 
-                script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch.sh")
+                script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-create.sh")
                 print ('Calling %s...' %script_path)
-                subprocess.call([script_path,self.workingdir,prefix])
+                exitCode = subprocess.call([script_path,self.workingdir,prefix])
 
-                print ('Planning the workflow...')
-                wf.plan(conf='./pegasusrc',\
-                        cluster = ['horizontal'],\
-                        sites = ['aws-batch'],\
-                        output_sites = ['local'],\
-                        dir = './dags',\
-                        force = True,\
-                        submit = False)
-
-                submit_dir = wf.braindump.submit_dir
-                print ('submit_dir: ' + str(submit_dir))
-
-                if os.path.exists(submit_dir):
+                if exitCode == 0:
                 
-                    if (1):
+                    print ('Planning the workflow...')
+                    wf.plan(conf='./pegasusrc',\
+                            cluster = ['horizontal'],\
+                            sites = ['aws-batch'],\
+                            output_sites = ['local'],\
+                            dir = './dags',\
+                            force = True,\
+                            submit = False)
+
+                    submit_dir = wf.braindump.submit_dir
+                    print ('submit_dir: ' + str(submit_dir))
+
+                    if os.path.exists(submit_dir):
                     
-                        # Set merge_titanlaunch_PID1_ID1.sub log level to trace
+                        #'''
+                        wf.run()
+                        #print ('wf.run_output: %s\n' %str(wf.run_output))
                     
-                        sub_filepath = os.path.join(submit_dir,'00','00','merge_titanlaunch_PID1_ID1.sub')
-                        #print ('sub_filepath: %s' %sub_filepath)
-                        tmp_filepath = os.path.join(self.workingdir, 'merge_titanlaunch_PID1_ID1.tmp')
-                        #print ('tmp_filepath: %s' %tmp_filepath)
+                        print ('Waiting for the workflow to complete...')
+                        wf.wait()
+                        #'''
                         
-                        if os.path.exists(sub_filepath):
-                            #print("\n%s: \n" %sub_filepath)
-                            FH1 = open(sub_filepath,'r')
-                            FH2 = open(tmp_filepath,'w')
-                            for line in FH1:
-                                #print(line.rstrip())
-                                if '--log-level debug' in line:
-                                   FH2.write(line.replace('--log-level debug','--log-level trace'))
-                                else:
-                                   FH2.write(line)
-                            FH1.close()
-                            FH2.close()
+                        script_path = os.path.join(self.scriptsdir,"pegasus-s3-rm.sh")
+                        print ('Calling %s...' %script_path)
+                        exitCode = subprocess.call([script_path,S3_URL_PREFIX,S3_BUCKET,S3_BUCKET_KEY])
+                        if exitCode != 0:
+                            print ('Run workflow Error: pegasus-s3-rm.sh returned nonzero exitCode: %s' %str(exitCode))
+        
+                        if (0):
+                            script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.sh")
+                            print ('Calling %s...' %script_path)
+                            exitCode = subprocess.call([script_path,self.workingdir,prefix])
+                            if exitCode != 0:
+                                print ('Run workflow Error: pegasus-aws-batch-delete.sh returned nonzero exitCode: %s' %str(exitCode))
                         else:
-                            print ('%s does not exist' %sub_filepath)
+                            # Add to PYTHONPATH
+                            sys.path.insert (1, self.scriptsdir)
+                            from pegasus_aws_batch_delete import pegasus_aws_batch_delete
+                            script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.py")
+                            print ('Calling %s...' %script_path)
+                            pegasus_aws_batch_delete(prefix)
+
+                        script_path = os.path.join(self.scriptsdir,"pegasus-analyzer.sh")
+                        print ('Calling %s...' %script_path)
+                        subprocess.call([script_path, self.workflow_results_directory, submit_dir])
                         
-                        #if os.path.exists(tmp_filepath):
-                            #print("\n%s: \n" %tmp_filepath)
-                            #FH1 = open(tmp_filepath,'r')
-                            #for line in FH1:
-                                #print(line.rstrip())
-                            #FH1.close()
-                        #else:
-                            #print ('%s does not exist' %tmp_filepath)
+                        script_path = os.path.join(self.scriptsdir,"pegasus-statistics.sh")
+                        print ('Calling %s...' %script_path)
+                        subprocess.call([script_path, self.workflow_results_directory, submit_dir])
                             
-                        os.remove(sub_filepath)
-                        shutil.copy(tmp_filepath, sub_filepath)
+                        shutil.rmtree(submit_dir)
+                        return True
                         
-                    print ('Submitting the workflow to HTCondor...')
-                    wf.run()
-                    
-                    print ('wf.run_output: %s\n' %str(wf.run_output))
+                    else:
+                        print ('Run workflow Error: submit directory %s not created' %submit_dir)
+                        return False
                 
-                    print ('Waiting for the workflow to complete...')
-                    wf.wait()
-                    
-                    # ***Note: Job queues are deleted.
-                    # Job definitions (need to deregister first?) and compute environments are not delected.
-                    script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.sh")
-                    print ('Calling %s...' %script_path)
-                    subprocess.call([script_path,self.workingdir,prefix])
-                        
-                    script_path = os.path.join(self.scriptsdir,"pegasus-analyzer.sh")
-                    print ('Calling %s...' %script_path)
-                    subprocess.call([script_path, self.workflow_results_directory, submit_dir])
-                    
-                    script_path = os.path.join(self.scriptsdir,"pegasus-statistics.sh")
-                    print ('Calling %s...' %script_path)
-                    subprocess.call([script_path, self.workflow_results_directory, submit_dir])
-                        
-                    shutil.rmtree(submit_dir)
-                    return True
-                    
                 else:
-                      print ('Run workflow Error: submit directory %s not created' %submit_dir)
-                      return False
+                    print ('Run workflow Error: pegasus-aws-batch-create.sh returned nonzero exitCode: %s' %str(exitCode))
+                    return False
                 
             except PegasusClientError as e:
             

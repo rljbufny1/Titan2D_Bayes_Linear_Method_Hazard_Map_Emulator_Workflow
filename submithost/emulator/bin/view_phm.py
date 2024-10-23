@@ -1,6 +1,6 @@
 #----------------------------------------------------------------------------------------------------------------------
 # Component of: Titan2D Hazard Map Emulator Workflow
-# Purpose: Create hazrad map images
+# Purpose: Create hazard map images
 # Called from: emulator.ipynb
 # Author: Renette Jones-Ivey
 # Date: Apr 1024

@@ -10,8 +10,8 @@
 # See ../pegasus-wms-configuration-scripts/configure.sh for more information.
 #
 # When the remotehostimage Docker image is created or updated,
-# need to upload the image to the Amazon Elastic Container Registry repository.
-# See ./push-docker-image-to-ECR.sh for more information.
+# need to upload the image to the Amazon Elastic Container Registry (ECR) repository.
+# See ./push-remotehostimage-to-ECR.sh for more information.
 
 #-------------------------------------------------------------------------------------------------------------------------------
 
@@ -49,22 +49,23 @@ RUN dnf -y update && \
 
 # Note: perl findutils, aws cli, unzip and futures required for pegasus-aws-batch
 
-RUN dnf -y update && \
-    dnf -y install \
-        autoconf \
-        automake \
-        gcc-c++ \
-        git \
-        make \
-	    perl findutils \
-        python2-devel \
-        python2-pip \
-        sudo \
-        swig \
-        wget \
-        which \
-        unzip \
-        zlib*
+RUN dnf -y install --allowerasing --nobest \
+    autoconf \
+    automake \
+    gcc-c++ \
+    git \
+    make \
+    perl findutils \
+    python2-devel \
+    python2-pip \
+    python3-devel \
+    python3-pip \
+    sudo \
+    swig \
+    wget \
+    which \
+    unzip \
+    zlib*
 
 RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 RUN unzip awscliv2.zip
