@@ -18,16 +18,6 @@ pegasus.integrity.checking none
 
 pegasus.register False
 
-# Properties required to run on AWS Batch
-# This line gets a location constraint error
-#pegasus.aws.region=us-east-1
-# Per https://docs.aws.amazon.com/cli/latest/reference/s3api/get-bucket-location.html,
-# Buckets in Region us-east-1 have a LocationConstraint of null.
-# aws s3api get-bucket-location --bucket titan2d-workdir-bucket returns
-#{
-# "LocationConstraint": null
-#}
-# causing Pegasus to get an error
 pegasus.aws.region=AMAZON_AWS_REGION
 
 # your AWS account id ( in digits)

@@ -13,4 +13,5 @@ pegasus-aws-batch \
     --prefix ${2} \
     --delete \
     -q ${2}-job-queue \
+    -j ${2}-job-definition:1 \
     --ce ${2}-compute-env

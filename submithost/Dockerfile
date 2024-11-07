@@ -20,8 +20,10 @@
 # https://docs.docker.com/engine/reference/commandline/build/
 # --tag,-t Name
 # build:
-#   # docker builder prune to remove cache first
-#   docker image build -t submithostimage . 2>&1 | tee dockerbuild.log
+#   # docker builder prune to remove dangling build cache first
+#   docker image build -t submithostimage . 2>&1 | tee build.log
+# build --no-cache:
+#   docker image build --no-cache -t submithostimage . 2>&1 | tee build.log
 
 # https://docs.docker.com/engine/reference/commandline/run/
 # --interactive,-i: Keep STDIN open

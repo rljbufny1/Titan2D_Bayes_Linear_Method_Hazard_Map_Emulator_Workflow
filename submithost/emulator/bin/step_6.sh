@@ -5,7 +5,7 @@
 # $2 - data directory
 # $3 - sample number
 
-#echo "step_6.sh "$1" "$2" "$3
+#echo "step_6.sh: $@"
 
 bindir=$1
 datadir=$2

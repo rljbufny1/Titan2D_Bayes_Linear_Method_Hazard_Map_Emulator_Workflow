@@ -4,7 +4,7 @@
 # $1 - matlab source directory
 # $2 - data directory
 
-#echo "step_5_8_9_10.sh "$1" "$2
+#echo "step_5_8_9_10.sh: $@"
 
 bindir=$1
 datadir=$2

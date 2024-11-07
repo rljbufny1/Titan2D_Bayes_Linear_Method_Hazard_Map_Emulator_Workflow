@@ -7,7 +7,7 @@
 # $2 - data directory
 # $3 - number of samples
 
-echo "step_1.sh "$1" "$2" "$3
+#echo "step_1.sh: $@"
 
 bindir=$1
 datadir=$2
@@ -18,7 +18,7 @@ numSamples=$3
 #echo "numSamples: "$numSamples
 
 octave=$(which octave)
-echo "which octave: "${octave}
+#echo "which octave: "${octave}
 
 octave --no-window-system --no-gui --no-history --silent --eval \
    "cd $bindir; \

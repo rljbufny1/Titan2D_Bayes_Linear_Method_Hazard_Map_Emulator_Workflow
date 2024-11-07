@@ -26,56 +26,69 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import re
 import uuid
 
 from Pegasus.api import *
-
-import DEM
-
-import logging
-logging.basicConfig(level=logging.WARNING)
 
 # Wrapper class
 # Called from ipynb
 class Wrapper():
     
-    def __init__(self, self_workingdir, self_bindir, self_scriptsdir, self_datadir, self_examplesdir, self_workflow_results_directory, num_simulations, maxwalltime):
+    def __init__(self, logger, workingdir, bindir, scriptsdir, datadir, examplesdir, workflow_results_directory, num_simulations, maxwalltime):
 
-        self.workingdir = self_workingdir
-        self.bindir = self_bindir
-        self.scriptsdir = self_scriptsdir
-        self.datadir = self_datadir
-        self.examplesdir = self_examplesdir
-        self.workflow_results_directory = self_workflow_results_directory
+        self.logger = logger
+        self.workingdir = workingdir
+        self.bindir = bindir
+        self.scriptsdir = scriptsdir
+        self.datadir = datadir
+        self.examplesdir = examplesdir
+        self.workflow_results_directory = workflow_results_directory
         self.num_simulations = num_simulations
         self.maxwalltime = maxwalltime
         
         '''
-        #print('self.workingdir: ', self.workingdir)
-        #print('self.bindir: ', self.bindir)
-        #print('self.scriptsdir: ', self.scriptsdir)
-        #print('self.datadir: ', self.datadir)
-        #print('self.examplesdir: ', self.examplesdir)
-        #print('self.workflow_results_directory: ', self.workflow_results_directory)
+        print('self.workingdir: ', self.workingdir)
+        print('self.bindir: ', self.bindir)
+        print('self.scriptsdir: ', self.scriptsdir)
+        print('self.datadir: ', self.datadir)
+        print('self.examplesdir: ', self.examplesdir)
+        print('self.workflow_results_directory: ', self.workflow_results_directory)
         print('self.num_simulations: ', self.num_simulations)
         print('self.maxwalltime: ', self.maxwalltime)
         print('\n')
         '''
         
-    def initialize_workflow(self, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
-        volcano_lat_utmn, volcano_lon_utme, \
-        lat_south, lat_north, lon_west, lon_east, \
-        grassgis_database, grassgis_location, grassgis_mapset, grassgis_map, \
+    def display_output (self, message):
+        print (message)
+        self.logger.info (message)
+                
+    def subprocess_popen (self, subprocess_args):
+    
+        #https://stackoverflow.com/questions/21953835/run-subprocess-and-print-output-to-logging
+        #https://stackoverflow.com/questions/5631624/how-to-get-exit-code-when-using-python-subprocess-communicate-method
+        subprocess_result = subprocess.Popen(subprocess_args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        #print ('type(subprocess_result): ', type(subprocess_result)) #<class 'subprocess.Popen'>
+        subprocess_output, _ =  subprocess_result.communicate() # Wait for and communicate output
+        returncode = subprocess_result.returncode
+        #print ('type(subprocess_output): ', type(subprocess_output)) #<class 'bytes'>
+        #print ("type(returncode): ", type (returncode)) #<class 'int'>
+        decoded_string = subprocess_output.decode('utf-8')  # Or the appropriate encoding
+        lines = decoded_string.splitlines()
+        for line in lines:
+            self.logger.info(line)
+        return returncode
+        
+    def initialize_workflow(self, grassgis_database, \
+        volcano_lat_utmn, volcano_lon_utme, lat_south, lat_north, lon_west, lon_east, \
         material_model, int_frict_angle, \
         pile_type, orientation_angle, initial_speed, initial_direction, \
         minvol, maxvol, minbed, maxbed, radius,
         memory, subnet, security_group):
-
-        self.grassgis_database = grassgis_database
         
+        self.grassgis_database = grassgis_database
+
         '''
-        print('volcano_lat_decimal_degrees: ', volcano_lat_decimal_degrees)
-        print('volcano_lon_decimal_degrees: ', volcano_lon_decimal_degrees)
         print('volcano_lat_utmn: ', volcano_lat_utmn)
         print('volcano_lon_utme: ', volcano_lon_utme)
         print('lat_south: ', lat_south)
@@ -83,9 +96,6 @@ class Wrapper():
         print('lon_west: ', lon_west)
         print('lon_east: ', lon_east)
         print('self.grassgis_database: ', self.grassgis_database)
-        print('grassgis_location ', grassgis_location)
-        print('grassgis_mapset: ', grassgis_mapset)
-        print('grassgis_map: ', grassgis_map)
         print('material_model: ', material_model)
         print('int_frict_angle: ', int_frict_angle)
         print('pile_type: ', pile_type)
@@ -103,16 +113,9 @@ class Wrapper():
         '''
         
         try:
-            # Create the GIS GRASS Database
-            print("Creating the GIS GRASS Database...")
 
-            #'''
-            DEM.get_DEM(self.workingdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
-                        lat_south, lat_north, lon_west, lon_east, \
-                        grassgis_database, grassgis_location, grassgis_mapset, grassgis_map)
-            #'''
-            print("The GIS GRASS Database successfully created.")
-
+            self.display_output('Initializing the workflow...')
+            
             # get input value for input.string(titan2dInputFile).
             # Full pathname of the Titan2D input file
             
@@ -127,6 +130,8 @@ class Wrapper():
                 #Rappture.result(io)
                 #sys.exit(0)
                 
+            self.display_output("Creating the Titan2D input files...");
+
             titan2d_simulation_input_file = os.path.join(self.examplesdir, "simulation.py")
             #print ('titan2d_simulation_input_file: ', titan2d_simulation_input_file)
             
@@ -136,7 +141,7 @@ class Wrapper():
                 FH2.close()
                 #print (output)
             else:
-                print ('Initialize workflow %s does not exist.' %titan2d_simulation_input_file)
+                self.logger.error ('Wrapper.py initialize_workflow: %s does not exist.' %titan2d_simulation_input_file)
                 return False
                     
 
@@ -176,29 +181,31 @@ class Wrapper():
             if (os.path.exists(run_params_mat_filepath) == True):
                 os.remove(run_params_mat_filepath)
 
-            setup_path = os.path.join(self.bindir,"setup.sh")
+            script_path = os.path.join(self.bindir, "setup.sh")
+            self.logger.info ('Calling %s...' %script_path)
             resamplePointsStr = '1024'
-            subprocess.call([setup_path,self.workingdir,self.bindir,self.datadir,\
+            subprocess_args = [script_path,self.workingdir,self.bindir,self.datadir,\
                              titan2dInputFile,titan2dInputFiled,titan2dInputFiledd,\
                              str(material_model), str(int_frict_angle), \
                              str(pile_type), str(orientation_angle), str(initial_speed), str(initial_direction), \
                              str(minvol),str(maxvol),str(minbed),str(maxbed),
                              str(volcano_lon_utme),str(volcano_lat_utmn),str(radius),\
-                             resamplePointsStr,str(self.num_simulations)])
-            
+                             resamplePointsStr,str(self.num_simulations)]
+            returncode = self.subprocess_popen(subprocess_args)
+
             # Verify
 
             if (os.path.exists(run_params_mat_filepath) == False):
                 #sys.stderr.write("%s not generated by setup processing\n" % run_params_mat_filename)
                 #sys.stderr.write("The gis_main path in the Titan2d input file is invalid or not resolved\n")
-                print("Initialize workflow %s not generated by setup processing\n" % run_params_mat_filename)
-                print("Initialize workflow The gis_main path in the Titan2d input file is invalid or not resolved\n")
+                self.logger.error("Wrapper.py initialize_workflow: %s not generated by setup processing\n" % run_params_mat_filename)
+                self.logger.error("Wrapper.py initialize_workflow: the gis_main path in the Titan2d input file is invalid or not resolved\n")
                 #io.put("output.string(runstate).about.label", value="Emulation error")
                 #Rappture.result(io)
                 #sys.exit(1)
                 return False
-            else:
-                print("\n%s successfully created\n" % run_params_mat_filename)
+            #else:
+                #self.display_output("%s successfully created" % run_params_mat_filename)
             
             # Step 1 - Call Gen_Titan_Input_Samples.m
             #
@@ -215,14 +222,16 @@ class Wrapper():
             if (os.path.exists(uncertain_input_list_h_filepath) == True):
                 os.remove(uncertain_input_list_h_filepath)
 
-            step_1_path = os.path.join(self.bindir,"step_1.sh")
-            subprocess.call([step_1_path,self.bindir,self.workingdir,str(self.num_simulations)])
+            script_path = os.path.join(self.bindir, "step_1.sh")
+            self.logger.info ('Calling %s...' %script_path)
+            subprocess_args = [script_path,self.bindir,self.workingdir,str(self.num_simulations)]
+            returncode = self.subprocess_popen(subprocess_args)
 
             # Verify
 
             if (os.path.exists(uncertain_input_list_filepath) == False):
                 #sys.stderr.write("%s not generated by step 1\n" % uncertain_input_list_filename)
-                print("Initialize workflow %s not generated by step 1\n" % uncertain_input_list_filename)
+                logger.error ("Wrapper.py initialize_workflow: %s not generated by step 1\n" % uncertain_input_list_filename)
                 #io.put("output.string(runstate).about.label", value="Emulation error")
                 #Rappture.result(io)
                 #sys.exit(1)
@@ -230,7 +239,7 @@ class Wrapper():
 
             if (os.path.exists(uncertain_input_list_h_filepath) == False):
                 #sys.stderr.write("%s not generated by step 1\n" % uncertain_input_list_h_filename)
-                print("Initialize workflow %s not generated by step 1\n" % uncertain_input_list_h_filename)
+                logger.error("Wrapper.py initialize_workflow: %s not generated by step 1\n" % uncertain_input_list_h_filename)
                 #io.put("output.string(runstate).about.label", value="Emulation error")
                 #Rappture.result(io)
                 #sys.exit(1)
@@ -241,15 +250,15 @@ class Wrapper():
             # Input(s): uncertain_input_list_h.txt
             # Output(s): simulation_<%06d sample number>.py
 
-            print("Creating the Titan2D input files...");
-
+            script_path = os.path.join(self.bindir, "step_2.sh")
+            self.logger.info ('Calling %s...' %script_path)
+            
             for i in range (1, self.num_simulations + 1):
                 filename = "simulation_%06d.py" %i
                 filepath = os.path.join(self.workingdir,filename)
                 if (os.path.exists(filepath) == True):
                     os.remove(filepath)
 
-            step_2_path = os.path.join(self.bindir,"step_2.sh")
             checkPercent = 10;
             if (self.num_simulations > checkPercent):
                 done = 0;
@@ -265,7 +274,8 @@ class Wrapper():
                         nextDoneCheck = done + nextDoneIncrement;
                         nextDonePercent = nextDonePercent + checkPercent;
                         print ("%d percent complete..." % nextDonePercent)
-                subprocess.call([step_2_path,self.workingdir,titan2dInputFile,str(i)])
+                subprocess_args = [script_path,self.workingdir,titan2dInputFile,str(i)]
+                returncode = self.subprocess_popen(subprocess_args)
 
             # Verify
 
@@ -276,34 +286,39 @@ class Wrapper():
                 if (os.path.exists(filepath) == True):
                     filecheck=filecheck+1
                 else:
-                    print ("file %s not found" % filepath)
+                    self.logger.error ("file %s not found" % filepath)
 
             #print ("filecheck: %d" %filecheck)
             if (filecheck != self.num_simulations):
-                print("Initialize workflow One or more Titan2D input files were not created by step 2\n")
+                self.logger.error ("Wrapper.py initialize_workflow: one or more Titan2D input files were not created by step 2\n")
                 #sys.exit(1)
                 return False
             else:
-                print("Titan2D input files successfully created\n")
+                self.display_output("Titan2D input files successfully created")
                 
-                print("\nCreating the emulator input files...");
+                self.display_output("Creating the emulator input files...");
                 
                 # Steps 5, 8, 9 and 10
                 # Create macro_emulator.pwem, macro_resamples.tmp, macro_resample_assemble.inputs,
                 # AZ_vol_dir_bed_int.phm and step11_12_13_staged_input.txt
 
-                step_5_8_9_10_path = os.path.join(self.bindir,"step_5_8_9_10.sh")
-                subprocess.call([step_5_8_9_10_path,self.bindir,self.workingdir])
-                
+                script_path = os.path.join(self.bindir,"step_5_8_9_10.sh")
+                self.logger.info ('Calling %s...' %script_path)
+                subprocess_args = [script_path,self.bindir,self.workingdir]
+                returncode = self.subprocess_popen(subprocess_args)
+
                 # Step 6 - Call extract_mini_emulator_build_meta_data.m
                 #
                 # Input(s): macro_emulator.pwem
                 # Output(s): build_mini_pwem_meta.<%06d sample number>
-                step_6_path = os.path.join(self.bindir,"step_6.sh")
+                
+                script_path = os.path.join(self.bindir,"step_6.sh")
+                self.logger.info ('Calling %s...' %script_path)
 
                 # Create build_mini_pwem_meta.<samplenumber - formatted as %06g> for each sample
                 for i in range (1, self.num_simulations + 1):
-                    subprocess.call([step_6_path,self.bindir,self.workingdir,str(i)])
+                    subprocess_args = [script_path,self.bindir,self.workingdir,str(i)]
+                    returncode = self.subprocess_popen(subprocess_args)
 
                 # Create the list of phm files for Pegasus
                 
@@ -336,11 +351,10 @@ class Wrapper():
                 # Use numSamples number of processors for this
 
                 numSimplicesTruncated = self.numSimplices-(self.simplexStart-1)
-                print ("numSimplicesTruncated: %d " % numSimplicesTruncated)
+                self.logger.info ("numSimplicesTruncated: %d " % numSimplicesTruncated)
                 
                 if (numSimplicesTruncated <= 0):
-                    sys.stderr.write("Initialize workflow Steps 11-13: Not enough simplices to continue. Verify the number of erupt simulations.\n")
-                    sys.stdout.flush()
+                    self.logger.error("Wrapper.py initialize_workflow: steps 11-13: Not enough simplices to continue. Verify the number of erupt simulations.\n")
                     return False
 
 
@@ -349,8 +363,8 @@ class Wrapper():
                 self.numSimplicesPerProcessor = numSimplicesTruncated//self.num_simulations
                 self.numSimplicesRemaining = numSimplicesTruncated%self.num_simulations
 
-                print ("self.simplexStart: %d " % self.simplexStart)
-                print ("self.numSimplices: %d " % self.numSimplices)
+                self.logger.info ("self.simplexStart: %d " % self.simplexStart)
+                self.logger.info ("self.numSimplices: %d " % self.numSimplices)
                 #print ("self.numSimplicesPerProcessor: %d " % self.numSimplicesPerProcessor)
                 #print ("self.numSimplicesRemaining: %d " % self.numSimplicesRemaining)
                 #print ("len(self.phm_filenames): " + str(len(self.phm_filenames)))
@@ -359,31 +373,31 @@ class Wrapper():
                 for i in range (len(self.phm_filenames)):
                     if (self.phm_filenames[i] != "0"):
                         count = count + 1
-                print ("self.phm_filenames count of nonzero files: %d" % count)
+                self.logger.info ("self.phm_filenames count of nonzero files: %d" % count)
                 
-                print("Emulator input files successfully created\n")
+                self.display_output("Emulator input files successfully created")
 
                 # Update pegasus aws batch configuration files based on user selected parameters.
                 script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-configure.sh")
-                print ('Calling %s...' %script_path)
-                subprocess.call([script_path, str(memory), subnet, security_group])
+                self.logger.info ('Calling %s...' %script_path)
+                subprocess_args = [script_path,str(memory),subnet,security_group]
+                returncode = self.subprocess_popen(subprocess_args)
 
                 sys.stdout.flush()
                 return True
             
         except Exception as e:
             
-            print ('Initialize workflow  Exception: %s\n' %str(e))
+            self.logger.error ('Wrapper.py initialize_workflow: Exception: %s\n' %str(e))
             return False
 
     def run_workflow(self, aws_region, aws_iam_username):
 
         try:
 
-            '''
-            print('aws_region: ', aws_region)
-            print('iam_username: ', aws_iam_username)
-            '''
+            self.display_output('Configuring the workflow...')
+            self.logger.info('aws_region: %s' %aws_region)
+            self.logger.info('iam_username: %s' %aws_iam_username)
             
             #########################################################
             # Create environment variables
@@ -392,10 +406,9 @@ class Wrapper():
             # Create the TOPDIR, PEGASUS_LOCAL_BIN_DIR, S3_URL_PREFIX, S3_BUCKET, and S3_BUCKET_KEY
             # environment variables for ./conf/sites.xml.
             
-            print ('os.getcwd: ', os.getcwd())
             TOPDIR = os.getcwd()
             os.environ['TOPDIR'] = TOPDIR
-            print("os.environ['TOPDIR']: ", os.environ['TOPDIR'])
+            self.logger.info("os.environ['TOPDIR']: %s" %str(os.environ['TOPDIR']))
             
             #BIN_DIR=`pegasus-config --bin`
             #echo "BIN_DIR: "$BIN_DIR
@@ -403,25 +416,26 @@ class Wrapper():
             #export PEGASUS_LOCAL_BIN_DIR
             PEGASUS_LOCAL_BIN_DIR = '/usr/bin'
             os.environ['PEGASUS_LOCAL_BIN_DIR'] = PEGASUS_LOCAL_BIN_DIR
-            print("os.environ['PEGASUS_LOCAL_BIN_DIR']: ", os.environ['PEGASUS_LOCAL_BIN_DIR'])
+            self.logger.info("os.environ['PEGASUS_LOCAL_BIN_DIR']: %s" %str(os.environ['PEGASUS_LOCAL_BIN_DIR']))
             
             S3_URL_PREFIX = 's3://user@amazon'
             os.environ['S3_URL_PREFIX'] = S3_URL_PREFIX
-            print("os.environ['S3_URL_PREFIX']: ", os.environ['S3_URL_PREFIX'])
+            self.logger.info("os.environ['S3_URL_PREFIX']: %s" %str(os.environ['S3_URL_PREFIX']))
             
             # ./pegasusrc sets pegasus.catalog.site.file=./conf/sites.xml.
             # ./conf/sites.xml aws-batch site's file server definition sets url to "${S3_URL_PREFIX}/${S3_BUCKET}/${S3_BUCKET_KEY}"
-            # The globally unique S3_BUCKET is created by Pegasus (if it does not already exist), for the current user and Amazon AWS Region.
-            # The S3_BUCKET_KEY (i.e. directory) is created for each workflow run.
-            # The S3_BUCKET_KEY is deleted after each workflow run.
-            S3_BUCKET = 'titan2d-blm-emulator-%s-%s' %(aws_region, aws_iam_username)
+            # The globally unique S3_BUCKET is created by Pegasus (if it does not already exist), for the current Amazon AWS Partition and IAM user.
+            # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html for more information on bucket naming rules.
+            bucket_name_suffix = re.sub(r'[^a-zA-Z0-9]+', '', str(aws_region + aws_iam_username)).lower()[:63]
+            S3_BUCKET = 'titan2d-blm-emulator-%s' %bucket_name_suffix
             #print ('S3_BUCKET: ', S3_BUCKET)
             os.environ['S3_BUCKET'] = S3_BUCKET
-            print("os.environ['S3_BUCKET']: ", os.environ['S3_BUCKET'])
+            self.logger.info("os.environ['S3_BUCKET']: %s" %str(os.environ['S3_BUCKET']))
+            # The S3_BUCKET_KEY (i.e. directory) is created for each workflow run and deleted after each workflow run.
             S3_BUCKET_KEY = 'pegasus-workflow'
             #print ('S3_BUCKET_KEY: ', S3_BUCKET_KEY)
             os.environ['S3_BUCKET_KEY'] = S3_BUCKET_KEY
-            print("os.environ['S3_BUCKET_KEY']: ", os.environ['S3_BUCKET_KEY'])
+            self.logger.info("os.environ['S3_BUCKET_KEY']: %s" %str(os.environ['S3_BUCKET_KEY']))
     
             #########################################################
             # Path to the titan and octave launch scripts
@@ -469,7 +483,7 @@ class Wrapper():
 
             # Grass database
             grassgis_database_zipped = self.grassgis_database+'.tar.gz'
-            print ('grassgis_database_zipped: ', grassgis_database_zipped)
+            self.logger.info ('grassgis_database_zipped: %s' %grassgis_database_zipped)
             # titanlaunch script unzips before titan is invoked
             rc.add_replica("local", File(grassgis_database_zipped), os.path.join(self.workingdir, grassgis_database_zipped))
             
@@ -625,7 +639,7 @@ class Wrapper():
                 
                 i=end+1
              
-            print ("Number of r_script11_12_13.m jobs added: %d" % count)
+            self.logger.info ("Number of r_script11_12_13.m jobs added: %d" % count)
             
             # Step 14 - Call script14.m
             #
@@ -658,21 +672,23 @@ class Wrapper():
                 wf.write()
                 wf.graph(include_files=True, label='xform-id', output=os.path.join(self.workflow_results_directory, 'graph.png'))
             except PegasusClientError as e:
-                print(e)
+                self.logger.error('Wrapper.py run_workflow: PegasusClientError Exception: %s\n' %str(e))
+                return False
 
             utcnow = datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S%f')
             prefix = 'remotehost-' + utcnow
-            print ('prefix: ' + prefix)
-
+            self.logger.info ('prefix: %s' %prefix)
+                
             try:
 
                 script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-create.sh")
-                print ('Calling %s...' %script_path)
-                exitCode = subprocess.call([script_path,self.workingdir,prefix])
+                self.logger.info ('Calling %s...' %script_path)
+                subprocess_args = [script_path,self.workingdir,prefix]
+                returncode = self.subprocess_popen(subprocess_args)
 
-                if exitCode == 0:
+                if returncode == 0:
                 
-                    print ('Planning the workflow...')
+                    self.display_output ('Planning the workflow...')
                     wf.plan(conf='./pegasusrc',\
                             cluster = ['horizontal'],\
                             sites = ['aws-batch'],\
@@ -682,64 +698,86 @@ class Wrapper():
                             submit = False)
 
                     submit_dir = wf.braindump.submit_dir
-                    print ('submit_dir: ' + str(submit_dir))
+                    self.logger.info ('submit_dir: %s' %str(submit_dir))
 
                     if os.path.exists(submit_dir):
                     
                         #'''
+                        self.display_output ('Running for the workflow...')
                         wf.run()
-                        #print ('wf.run_output: %s\n' %str(wf.run_output))
+                        self.logger.info ('wf.run_output: %s\n' %str(wf.run_output))
                     
-                        print ('Waiting for the workflow to complete...')
+                        self.display_output ('Waiting for the workflow to complete...')
                         wf.wait()
                         #'''
                         
-                        script_path = os.path.join(self.scriptsdir,"pegasus-s3-rm.sh")
-                        print ('Calling %s...' %script_path)
-                        exitCode = subprocess.call([script_path,S3_URL_PREFIX,S3_BUCKET,S3_BUCKET_KEY])
-                        if exitCode != 0:
-                            print ('Run workflow Error: pegasus-s3-rm.sh returned nonzero exitCode: %s' %str(exitCode))
-        
-                        if (0):
-                            script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.sh")
-                            print ('Calling %s...' %script_path)
-                            exitCode = subprocess.call([script_path,self.workingdir,prefix])
-                            if exitCode != 0:
-                                print ('Run workflow Error: pegasus-aws-batch-delete.sh returned nonzero exitCode: %s' %str(exitCode))
-                        else:
-                            # Add to PYTHONPATH
-                            sys.path.insert (1, self.scriptsdir)
-                            from pegasus_aws_batch_delete import pegasus_aws_batch_delete
-                            script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.py")
-                            print ('Calling %s...' %script_path)
-                            pegasus_aws_batch_delete(prefix)
-
                         script_path = os.path.join(self.scriptsdir,"pegasus-analyzer.sh")
-                        print ('Calling %s...' %script_path)
-                        subprocess.call([script_path, self.workflow_results_directory, submit_dir])
-                        
+                        self.logger.info ('Calling %s...' %script_path)
+                        subprocess_args = [script_path,self.workflow_results_directory,submit_dir]
+                        returncode = self.subprocess_popen(subprocess_args)
+                        if returncode != 0:
+                            self.logger.warning ('pegasus-analyzer.sh returned nonzero returncode: %s' %str(returncode))
+
                         script_path = os.path.join(self.scriptsdir,"pegasus-statistics.sh")
-                        print ('Calling %s...' %script_path)
-                        subprocess.call([script_path, self.workflow_results_directory, submit_dir])
-                            
+                        self.logger.info ('Calling %s...' %script_path)
+                        subprocess_args = [script_path,self.workflow_results_directory,submit_dir]
+                        returncode = self.subprocess_popen(subprocess_args)
+                        if returncode != 0:
+                            self.logger.warning ('pegasus-statistics.sh returned nonzero returncode: %s' %str(returncode))
+
+                        # Clean up
+                        
+                        self.display_output("Cleanup...")
+
+                        for i in range (1, 5):
+                            filename = "elevation%d.tif" %i
+                            filepath = os.path.join(self.workingdir,filename)
+                            if (os.path.exists(filepath) == True):
+                                os.remove(filepath)
+                                
+                        for i in range (1, self.num_simulations + 1):
+                            filename = "build_mini_pwem_meta.%06d" %i
+                            filepath = os.path.join(self.workingdir,filename)
+                            if (os.path.exists(filepath) == True):
+                                os.remove(filepath)
+                                
+                            filename = "simulation_%06d.py" %i
+                            filepath = os.path.join(self.workingdir,filename)
+                            if (os.path.exists(filepath) == True):
+                                os.remove(filepath)
+                        
+                        script_path = os.path.join(self.scriptsdir,"pegasus-s3-rm.sh")
+                        self.logger.info ('Calling %s...' %script_path)
+                        subprocess_args = [script_path,S3_URL_PREFIX,S3_BUCKET,S3_BUCKET_KEY]
+                        returncode = self.subprocess_popen(subprocess_args)
+                        if returncode != 0:
+                            self.logger.warning ('pegasus-s3-rm.sh returned nonzero returncode: %s' %str(returncode))
+        
+                        script_path = os.path.join(self.scriptsdir,"pegasus-aws-batch-delete.sh")
+                        self.logger.info ('Calling %s...' %script_path)
+                        subprocess_args = [script_path,self.workingdir,prefix]
+                        returncode = self.subprocess_popen(subprocess_args)
+                        if returncode != 0:
+                            self.logger.warning ('pegasus-aws-batch-delete.sh returned nonzero exitCode: %s' %str(exitCode))
+
                         shutil.rmtree(submit_dir)
                         return True
                         
                     else:
-                        print ('Run workflow Error: submit directory %s not created' %submit_dir)
+                        self.logger.error ('Wrapper.py run_workflow: Pegasus submit directory %s not created' %submit_dir)
                         return False
                 
                 else:
-                    print ('Run workflow Error: pegasus-aws-batch-create.sh returned nonzero exitCode: %s' %str(exitCode))
+                    self.logger.error ('Wrapper.py run_workflow: pegasus-aws-batch-create.sh returned nonzero returncode: %s' %str(returncode))
                     return False
                 
             except PegasusClientError as e:
             
-                print ('Run workflow PegasusClientError Exception: %s\n' %str(e))
+                self.logger.error ('Wrapper.py run_workflow: PegasusClientError Exception: %s\n' %str(e))
                 return False
                 
         except Exception as e:
             
-            print ('Run workflow Exception: %s\n' %str(e))
+            self.logger.error ('Wrapper.py run_workflow: Exception: %s\n' %str(e))
             return False
  

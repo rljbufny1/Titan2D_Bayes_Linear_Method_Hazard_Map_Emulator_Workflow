@@ -25,7 +25,7 @@
 # --tag,-t Name
 # build:
 #   # docker builder prune to remove cache first
-#   docker image build -t remotehostimage . 2>&1 | tee dockerbuild.log
+#   docker image build -t remotehostimage . 2>&1 | tee build.log
 
 # ====================================================================
 # System installations

@@ -2,7 +2,7 @@
 
 # rlj - bash script to update the Titan2D input file for all samples
 
-echo "setup.sh: $@"
+#echo "setup.sh: $@"
 
 # Args:
 # double digits need {}
@@ -34,13 +34,13 @@ numSamples=${21}
 #echo $titan2dInputFile
 #echo $titan2dInputFiled
 #echo $titan2dInputFiledd
-echo "material_model: "$material_model
-echo "int_frict_angle: "$int_frict_angle
-echo "pile_type: "$pile_type
-echo "orientation_angle: "$orientation_angle
-echo "initial_speed: "$initial_speed
-echo "initial_direction: "$initial_direction
-echo "minvol: "$minvol
+#echo "material_model: "$material_model
+#echo "int_frict_angle: "$int_frict_angle
+#echo "pile_type: "$pile_type
+#echo "orientation_angle: "$orientation_angle
+#echo "initial_speed: "$initial_speed
+#echo "initial_direction: "$initial_direction
+#echo "minvol: "$minvol
 #echo "maxvol: "$maxvol
 #echo "BEDMIN: "$BEDMIN
 #echo "BEDMAX: "$BEDMAX
@@ -48,7 +48,7 @@ echo "minvol: "$minvol
 #echo "STARTUTMNCEN: "$STARTUTMNCEN
 #echo "STARTRADIUSMAX: "$STARTRADIUSMAX
 #echo "ResamplePoints: "$ResamplePoints
-echo "numSamples: "$numSamples
+#echo "numSamples: "$numSamples
 
 # Clean up submit generated files
 rm -rf grassdir*

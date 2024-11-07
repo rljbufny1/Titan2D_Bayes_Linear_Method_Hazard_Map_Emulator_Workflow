@@ -37,18 +37,18 @@ from rasterio.warp import calculate_default_transform, reproject, Resampling
 
 # For Unit Testing Only
 Unit_Testing = False
-  
+
 #def main(argv):
-def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
+def get_DEM(logger, self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degrees, \
          lat_south, lat_north, lon_west, lon_east,\
          grassgis_database, grassgis_location, grassgis_mapset, grassgis_map):
     
     #print ('DEM.py...')
     #print (argv)
     
-    print ('\nos.path.expanduser("~"): ', os.path.expanduser('~'))
+    logger.info ('os.path.expanduser("~"): %s' %str(os.path.expanduser('~')))
     workingdir = os.getcwd()
-    print ('workingdir: ', workingdir)
+    logger.info ('workingdir: %s' %workingdir)
 
     '''
     lat_south = float(argv[1])
@@ -85,19 +85,19 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
         utmzones = True
     else:
         utmzones = False
-    print('utmzones: %s' %utmzones)
+    logger.info('utmzones: %s' %utmzones)
     
     # Set GISBASE environment variable
     gisbase = '/usr/lib64/grass78'
     os.environ['GISBASE'] = gisbase
-    print ("os.environ['GISBASE']: ", os.environ['GISBASE'])
+    logger.info ("os.environ['GISBASE']: %s" %str(os.environ['GISBASE']))
     
     # Set GISLOCK environment variable
     os.environ['GISLOCK'] = '$$'
     
     # define GRASS-Python environment
     grass_python_dir = os.path.join(gisbase, "etc", "python")
-    print ('grass_python_dir: ', grass_python_dir)
+    logger.info ('grass_python_dir: %s' %grass_python_dir)
     sys.path.append(grass_python_dir)
     #print ('sys.path: ', sys.path)
     import grass.script as grass_script
@@ -110,8 +110,6 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
     #print ('Current GRASS 7 environment: ', grass_script.gisenv())
     
     start_time = time.time()
-    
-    print ('workingdir: ', workingdir)
     
     # Geotiff has only 1 band
     geotiff1 = os.path.join(workingdir, 'elevation1.tif')
@@ -137,8 +135,6 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
     # elevation1.tif: Band 1 Block=256x256 Type=Int16, ColorInterp=Gray
     if (0):    
         print (gdal.Info(geotiff1))
-    # WGS84
-    # EPGS: 4326
     
     # Uncompress
     ds = gdal.Open(geotiff1)
@@ -164,7 +160,7 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
     crs2 = crs.to_authority()
     #print (crs2)
     dst_crs = crs2[0]+':'+crs2[1]
-    print (dst_crs)
+    logger.info (dst_crs)
 
     # https://rasterio.readthedocs.io/en/stable/topics/reproject.html
     with rasterio.open(geotiff3) as src:
@@ -248,11 +244,11 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
     #print('g.list: ', grass_script.run_command('g.list', type='rast', flags='p')) #0
     
     filepath = os.path.join(grassgis_database, grassgis_location, grassgis_mapset, 'cellhd', grassgis_map)
-    print ('\n%s:\n' %filepath)
+    logger.info ('\n%s:\n' %filepath)
     f = open(filepath, 'r')
     output = f.read()
     f.close()
-    print (output)
+    logger.info (output)
     
     #print (grass_script.run_command('r.compress', flags='p', map = grassgis_map)) #0
 
@@ -271,7 +267,7 @@ def get_DEM(self_workdir, volcano_lat_decimal_degrees, volcano_lon_decimal_degre
 if Unit_Testing == True:
     
     # Azufral, Volcan
-    workdir =  '/Users/[user name]/AAA_Titan2D_Bayes_Linear_Method_Hazard_Map_Emulator_Workflow/submithost/emulator'
+    workdir =  '~/AAA_Titan2D_Bayes_Linear_Method_Hazard_Map_Emulator_Workflow/submithost/emulator'
     volcano_lat_decimal_degrees =  1.08
     volcano_lon_decimal_degrees = -77.68
     lat_south = 0.96

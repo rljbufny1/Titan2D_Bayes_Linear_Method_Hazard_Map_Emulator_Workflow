@@ -7,7 +7,7 @@
 # $2 - titan2dInputFile
 # $3 - samplenumber
 
-echo "step_2.sh "$1" "$2" "$3
+#echo "step_2.sh: $@"
 
 workingdir=$1
 titan2dInputFile=$2
